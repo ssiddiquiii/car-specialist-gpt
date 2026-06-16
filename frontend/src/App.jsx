@@ -1,5 +1,7 @@
+import AppRoutes from "./routes/AppRoutes";
+
 function App() {
-  return <h1>Car Specialist GPT</h1>;
+  return <AppRoutes />;
 }
 
 export default App;
