@@ -1,14 +1,16 @@
 import { Outlet } from "react-router-dom";
+import Logo from "../components/Logo/logo";
+import Footer from "../components/Footer/Footer";
 
 function MainLayout() {
   return (
     <>
-      <h2>LOGO</h2>
+      <Logo />
 
       <Outlet />
 
-      <footer>FOOTER</footer>
-    </>
+      <Footer />
+    </> 
   );
 }
 
