@@ -1,9 +1,11 @@
-function Button({ children, onClick, type = "button" }) {
+import { BUTTON_VARIANTS } from "../../constants/ui/button";
+
+function Button({ children, variant = "primary", onClick, type = "button" }) {
   return (
     <button
       type={type}
       onClick={onClick}
-      className="rounded-lg bg-blue-600 px-6 py-3 font-medium text-white transition hover:bg-blue-700"
+      className={`rounded-lg px-6 py-3 font-medium transition ${BUTTON_VARIANTS[variant]}`}
     >
       {children}
     </button>
