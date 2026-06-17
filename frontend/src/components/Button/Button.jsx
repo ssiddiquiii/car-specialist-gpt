@@ -1,11 +1,23 @@
-import { BUTTON_VARIANTS } from "../../constants/ui/button";
+function Button({
+  children,
+  variant = "primary",
+  onClick,
+  type = "button",
+  className = "",
+  style = {},
+  ...props
+}) {
+  const variantClass = variant === "primary" ? "btn-primary"
+    : variant === "outline" ? "btn-outline"
+    : "btn-primary";
 
-function Button({ children, variant = "primary", onClick, type = "button" }) {
   return (
     <button
       type={type}
       onClick={onClick}
-      className={`rounded-lg px-6 py-3 font-medium transition ${BUTTON_VARIANTS[variant]}`}
+      className={`${variantClass} ${className}`}
+      style={style}
+      {...props}
     >
       {children}
     </button>

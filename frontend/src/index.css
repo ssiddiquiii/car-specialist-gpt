@@ -1,22 +1,360 @@
 @import "tailwindcss";
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+/* ═══════════════════════════════════════════════════════════
+   LIGHT THEME  (default — Claude-inspired warm off-white)
+═══════════════════════════════════════════════════════════ */
+:root {
+  /* Surfaces */
+  --bg-base:        #F5F0E8;      /* warm parchment — Claude's page bg  */
+  --bg-card:        #FFFFFF;      /* pure white cards                   */
+  --bg-surface:     #EDE8DF;      /* slightly darker cream              */
+  --bg-input:       #FFFFFF;      /* input background                   */
+  --bg-nav:         rgba(245,240,232,0.9);
+
+  /* Borders */
+  --border-subtle:  #E4DDD2;      /* warm light gray                    */
+  --border-strong:  #C9C2B6;      /* darker warm gray                   */
+  --border-focus:   #1C1917;      /* near-black on focus                */
+
+  /* Text */
+  --text-primary:   #1C1917;      /* deep charcoal-brown                */
+  --text-secondary: #6B6460;      /* warm mid-gray                      */
+  --text-muted:     #9C9890;      /* light warm gray                    */
+  --text-placeholder: #AEAAA3;
+
+  /* Accent — automotive orange (warm, not garish) */
+  --accent:         #C85F3A;      /* slightly muted orange for light bg */
+  --accent-hover:   #A84C2E;
+  --accent-subtle:  rgba(200,95,58,0.08);
+  --accent-subtle2: rgba(200,95,58,0.15);
+
+  /* Primary button (Claude-style: near black) */
+  --btn-dark-bg:    #1C1917;
+  --btn-dark-hover: #2C2A27;
+  --btn-dark-text:  #F5F0E8;
+
+  /* Misc */
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:  0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+  --shadow-lg:  0 12px 40px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.06);
+  --radius-sm:  8px;
+  --radius-md:  10px;
+  --radius-lg:  14px;
+  --radius-xl:  20px;
+  --radius-full: 999px;
 }
 
-html,
-body,
-#root {
-  width: 100%;
-  min-height: 100%;
+/* ═══════════════════════════════════════════════════════════
+   DARK THEME  (toggle — rich near-black)
+═══════════════════════════════════════════════════════════ */
+[data-theme="dark"] {
+  --bg-base:        #0E0E10;
+  --bg-card:        #18181C;
+  --bg-surface:     #1F1F24;
+  --bg-input:       #18181C;
+  --bg-nav:         rgba(14,14,16,0.9);
+
+  --border-subtle:  rgba(255,255,255,0.08);
+  --border-strong:  rgba(255,255,255,0.14);
+  --border-focus:   rgba(255,255,255,0.6);
+
+  --text-primary:   #F0EDE8;
+  --text-secondary: #8C8880;
+  --text-muted:     #5C5A56;
+  --text-placeholder: #4C4A46;
+
+  --accent:         #E8683A;
+  --accent-hover:   #F07840;
+  --accent-subtle:  rgba(232,104,58,0.10);
+  --accent-subtle2: rgba(232,104,58,0.18);
+
+  --btn-dark-bg:    #E8683A;
+  --btn-dark-hover: #F07840;
+  --btn-dark-text:  #FFFFFF;
+
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md:  0 4px 16px rgba(0,0,0,0.4);
+  --shadow-lg:  0 16px 60px rgba(0,0,0,0.5);
 }
+
+/* ═══════════════════════════════════════════════════════════
+   RESET
+═══════════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+html, body, #root { width: 100%; min-height: 100%; }
 
 body {
-  font-family: Arial, sans-serif;
-  background-color: white;
-  color: black;
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+a { text-decoration: none; color: inherit; }
+button { cursor: pointer; font-family: inherit; }
+img { max-width: 100%; display: block; }
+
+/* ─── Scrollbar ─────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-surface); }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
+
+/* ═══════════════════════════════════════════════════════════
+   ANIMATIONS
+═══════════════════════════════════════════════════════════ */
+@keyframes gradient-shift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TYPOGRAPHY UTILITIES
+═══════════════════════════════════════════════════════════ */
+.gradient-text {
+  background: linear-gradient(135deg, #C85F3A 0%, #E8683A 50%, #F59E0B 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-shift 5s ease infinite;
+}
+[data-theme="dark"] .gradient-text {
+  background: linear-gradient(135deg, #F59E0B 0%, #E8683A 50%, #EF4444 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BUTTONS  (Claude-style)
+═══════════════════════════════════════════════════════════ */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background: var(--btn-dark-bg);
+  color: var(--btn-dark-text);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 11px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--btn-dark-hover);
+  transform: translateY(-1px);
+}
+.btn-primary:active:not(:disabled) { transform: translateY(0); }
+.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 11px 22px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.btn-outline:hover {
+  border-color: var(--text-primary);
+  background: var(--bg-surface);
+}
+
+.btn-accent {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 11px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+  white-space: nowrap;
+}
+.btn-accent:hover:not(:disabled) {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   INPUT FIELD  (Claude-style)
+═══════════════════════════════════════════════════════════ */
+.input-field {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 0 14px;
+  height: 44px;
+  color: var(--text-primary);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  font-family: inherit;
+}
+.input-field::placeholder { color: var(--text-placeholder); }
+.input-field:hover { border-color: var(--border-strong); }
+.input-field:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(28,25,23,0.08);
+}
+[data-theme="dark"] .input-field:focus {
+  border-color: rgba(255,255,255,0.5);
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.05);
+}
+.input-field.error {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220,38,38,0.1);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   NAVBAR
+═══════════════════════════════════════════════════════════ */
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--bg-nav);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 0.3s ease;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   GRID PATTERN  (light and dark variants)
+═══════════════════════════════════════════════════════════ */
+.bg-grid {
+  background-image:
+    linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+[data-theme="dark"] .bg-grid {
+  background-image:
+    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   AUTH PAGE  (Claude-style clean centered form)
+═══════════════════════════════════════════════════════════ */
+.auth-page {
+  min-height: 100vh;
+  background: var(--bg-base);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+.auth-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 40px 36px;
+  box-shadow: var(--shadow-lg);
+}
+.auth-divider {
+  position: relative;
+  text-align: center;
+  margin: 20px 0;
+}
+.auth-divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--border-subtle);
+}
+.auth-divider span {
+  position: relative;
+  background: var(--bg-card);
+  padding: 0 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   THEME TOGGLE BUTTON
+═══════════════════════════════════════════════════════════ */
+.theme-toggle {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+.theme-toggle:hover {
+  background: var(--bg-card);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MISC UTILITIES
+═══════════════════════════════════════════════════════════ */
+.badge-accent {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--accent-subtle);
+  border: 1px solid var(--accent-subtle2);
+  border-radius: var(--radius-full);
+  padding: 5px 13px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.section-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 12px;
 }
