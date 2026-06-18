@@ -1,9 +1,11 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import MainLayout from "../layouts/MainLayout";
+import ChatLayout from "../layouts/ChatLayout";
 import Landing from "../pages/Landing/Landing";
 import Login from "../pages/Auth/Login";
 import Register from "../pages/Auth/Register";
+import ChatPage from "../pages/Chat/ChatPage";
 import ProtectedRoute from "../components/ProtectedRoute";
 import { useAuthStore } from "../store/authStore";
 
@@ -11,7 +13,7 @@ import { useAuthStore } from "../store/authStore";
 function PublicOnlyRoute({ children }) {
   const { isAuthenticated } = useAuthStore();
   if (isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/chat" replace />;
   }
   return children;
 }
@@ -43,19 +45,17 @@ function AppRoutes() {
           }
         />
 
-        {/* Protected routes (e.g., Chat Interface - To be built in Phase 3) */}
+        {/* Protected chat routes — wrapped in ChatLayout (sidebar + topbar) */}
         <Route
-          path="/chat"
           element={
             <ProtectedRoute>
-              {/* Temporary placeholder for Phase 3 */}
-              <div className="flex h-screen items-center justify-center bg-slate-50 text-xl font-semibold text-slate-900">
-                Chat Interface (Phase 3)
-              </div>
+              <ChatLayout />
             </ProtectedRoute>
           }
-        />
-        
+        >
+          <Route path="/chat" element={<ChatPage />} />
+        </Route>
+
         {/* Fallback route */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
