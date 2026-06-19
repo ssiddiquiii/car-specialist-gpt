@@ -1,8 +1,8 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useChatStore } from "../../store/chatStore";
+import ChatWindow from "../../components/ChatWindow/ChatWindow";
+import ChatInput from "../../components/ChatInput/ChatInput";
 
-/* ─── Suggestion prompts ──────────────────────────────────── */
+/* ─── Suggestion prompts ─────────────────────────────────── */
 const SUGGESTIONS = [
   {
     icon: (
@@ -43,7 +43,6 @@ const SUGGESTIONS = [
   },
 ];
 
-/* ─── Feature chips ─────────────────────────────────────────── */
 const FEATURES = [
   "Diagnostics & troubleshooting",
   "Buying advice",
@@ -53,31 +52,8 @@ const FEATURES = [
   "EV & hybrid knowledge",
 ];
 
-/* ─── Send icon ─────────────────────────────────────────────── */
-const SendIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-  </svg>
-);
-
-function ChatPage() {
-  const navigate = useNavigate();
-  const { newConversation, activeConversationId } = useChatStore();
-  const [input, setInput] = useState("");
-
-  const handleSend = (text) => {
-    const content = (text ?? input).trim();
-    if (!content) return;
-    // If no active conversation, create one
-    if (!activeConversationId) newConversation();
-    // Day 4: will dispatch to chat engine
-    setInput("");
-  };
-
-  const handleSuggestion = (prompt) => {
-    setInput(prompt);
-  };
-
+/* ─── Welcome / Empty State ──────────────────────────────── */
+function WelcomeScreen({ onSend }) {
   return (
     <div style={{
       flex: 1,
@@ -85,28 +61,21 @@ function ChatPage() {
       flexDirection: "column",
       alignItems: "center",
       justifyContent: "center",
-      padding: "32px 20px 24px",
+      padding: "32px 20px 0",
       overflow: "hidden",
       position: "relative",
     }}>
-
-      {/* Subtle radial glow */}
+      {/* Radial glow */}
       <div style={{
-        position: "absolute",
-        top: "10%",
-        left: "50%",
-        transform: "translateX(-50%)",
-        width: "600px",
-        height: "400px",
+        position: "absolute", top: "8%", left: "50%", transform: "translateX(-50%)",
+        width: "600px", height: "360px",
         background: "radial-gradient(ellipse at center, var(--accent-subtle) 0%, transparent 70%)",
-        pointerEvents: "none",
-        zIndex: 0,
+        pointerEvents: "none", zIndex: 0,
       }} />
 
-      {/* ── Content ── */}
-      <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: "680px", display: "flex", flexDirection: "column", alignItems: "center", gap: "28px" }}>
+      <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: "680px", display: "flex", flexDirection: "column", alignItems: "center", gap: "24px" }}>
 
-        {/* Icon + Heading */}
+        {/* Icon + heading */}
         <div style={{ textAlign: "center", animation: "fadeUp 0.4s ease both" }}>
           <div style={{
             width: "56px", height: "56px", borderRadius: "16px",
@@ -120,43 +89,29 @@ function ChatPage() {
               <circle cx="7.5" cy="17.5" r="2.5"/><circle cx="16.5" cy="17.5" r="2.5"/>
             </svg>
           </div>
-          <h1 style={{
-            fontSize: "clamp(22px, 3vw, 28px)",
-            fontWeight: 700,
-            color: "var(--text-primary)",
-            letterSpacing: "-0.03em",
-            marginBottom: "8px",
-          }}>
+          <h1 style={{ fontSize: "clamp(22px, 3vw, 28px)", fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.03em", marginBottom: "8px" }}>
             Your Car Specialist is ready
           </h1>
-          <p style={{ fontSize: "14.5px", color: "var(--text-secondary)", lineHeight: 1.6, maxWidth: "440px" }}>
+          <p style={{ fontSize: "14.5px", color: "var(--text-secondary)", lineHeight: 1.6, maxWidth: "420px" }}>
             Ask anything about cars — diagnostics, buying advice, maintenance, fuel efficiency, and more.
           </p>
         </div>
 
         {/* Suggestion cards */}
         <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(2, 1fr)",
-          gap: "10px",
-          width: "100%",
+          display: "grid", gridTemplateColumns: "repeat(2, 1fr)",
+          gap: "10px", width: "100%",
           animation: "fadeUp 0.5s ease 0.1s both",
         }}>
           {SUGGESTIONS.map((s) => (
             <button
               key={s.label}
-              onClick={() => handleSuggestion(s.prompt)}
+              onClick={() => onSend(s.prompt)}
               style={{
-                display: "flex",
-                alignItems: "flex-start",
-                gap: "10px",
-                background: "var(--bg-card)",
-                border: "1px solid var(--border-subtle)",
-                borderRadius: "var(--radius-md)",
-                padding: "14px 16px",
-                textAlign: "left",
-                cursor: "pointer",
-                fontFamily: "inherit",
+                display: "flex", alignItems: "flex-start", gap: "10px",
+                background: "var(--bg-card)", border: "1px solid var(--border-subtle)",
+                borderRadius: "var(--radius-md)", padding: "14px 16px",
+                textAlign: "left", cursor: "pointer", fontFamily: "inherit",
                 transition: "all 0.15s ease",
               }}
               onMouseEnter={(e) => {
@@ -180,87 +135,15 @@ function ChatPage() {
           ))}
         </div>
 
-        {/* ── Input bar ── */}
-        <div style={{ width: "100%", animation: "fadeUp 0.5s ease 0.2s both" }}>
-          <div style={{
-            display: "flex",
-            alignItems: "flex-end",
-            gap: "10px",
-            background: "var(--bg-card)",
-            border: "1px solid var(--border-strong)",
-            borderRadius: "var(--radius-lg)",
-            padding: "12px 12px 12px 18px",
-            boxShadow: "var(--shadow-md)",
-            transition: "border-color 0.15s ease, box-shadow 0.15s ease",
-          }}
-          onFocus={() => {}}
-          >
-            <textarea
-              value={input}
-              onChange={(e) => {
-                setInput(e.target.value);
-                e.target.style.height = "auto";
-                e.target.style.height = Math.min(e.target.scrollHeight, 160) + "px";
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
-              placeholder="Ask me anything about cars…"
-              rows={1}
-              style={{
-                flex: 1,
-                background: "transparent",
-                border: "none",
-                outline: "none",
-                resize: "none",
-                fontSize: "14px",
-                color: "var(--text-primary)",
-                fontFamily: "inherit",
-                lineHeight: 1.6,
-                maxHeight: "160px",
-                overflowY: "auto",
-              }}
-            />
-            <button
-              onClick={() => handleSend()}
-              disabled={!input.trim()}
-              style={{
-                width: "36px", height: "36px", borderRadius: "10px",
-                background: input.trim() ? "var(--btn-dark-bg)" : "var(--bg-surface)",
-                border: "none",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                color: input.trim() ? "var(--btn-dark-text)" : "var(--text-muted)",
-                cursor: input.trim() ? "pointer" : "not-allowed",
-                flexShrink: 0,
-                transition: "all 0.15s ease",
-              }}
-              onMouseEnter={(e) => { if (input.trim()) e.currentTarget.style.background = "var(--btn-dark-hover)"; }}
-              onMouseLeave={(e) => { if (input.trim()) e.currentTarget.style.background = "var(--btn-dark-bg)"; }}
-            >
-              <SendIcon />
-            </button>
-          </div>
-
-          {/* Hint text */}
-          <p style={{ textAlign: "center", fontSize: "11.5px", color: "var(--text-muted)", marginTop: "10px" }}>
-            Press <kbd style={{ background: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderRadius: "4px", padding: "1px 5px", fontSize: "10.5px", fontFamily: "inherit" }}>Enter</kbd> to send · <kbd style={{ background: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderRadius: "4px", padding: "1px 5px", fontSize: "10.5px", fontFamily: "inherit" }}>Shift+Enter</kbd> for new line
-          </p>
-        </div>
-
         {/* Capability chips */}
-        <div style={{ animation: "fadeUp 0.5s ease 0.3s both", textAlign: "center" }}>
-          <p style={{ fontSize: "11.5px", color: "var(--text-muted)", marginBottom: "10px", letterSpacing: "0.02em" }}>I can help you with</p>
+        <div style={{ animation: "fadeUp 0.5s ease 0.2s both", textAlign: "center" }}>
+          <p style={{ fontSize: "11.5px", color: "var(--text-muted)", marginBottom: "10px" }}>I can help you with</p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", justifyContent: "center" }}>
             {FEATURES.map((f) => (
               <span key={f} style={{
                 fontSize: "11.5px", fontWeight: 500,
-                background: "var(--bg-surface)",
-                border: "1px solid var(--border-subtle)",
-                borderRadius: "var(--radius-full)",
-                padding: "4px 12px",
+                background: "var(--bg-surface)", border: "1px solid var(--border-subtle)",
+                borderRadius: "var(--radius-full)", padding: "4px 12px",
                 color: "var(--text-secondary)",
               }}>
                 {f}
@@ -270,6 +153,34 @@ function ChatPage() {
         </div>
 
       </div>
+    </div>
+  );
+}
+
+/* ─── ChatPage ───────────────────────────────────────────── */
+function ChatPage() {
+  const { getActiveConversation, sendMessage, isTyping } = useChatStore();
+  const activeConv = getActiveConversation();
+  const hasMessages = (activeConv?.messages?.length ?? 0) > 0;
+
+  const handleSend = (text) => {
+    if (!text.trim()) return;
+    sendMessage(text);
+  };
+
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+
+      {/* Show welcome screen OR message thread */}
+      {hasMessages ? (
+        <ChatWindow messages={activeConv.messages} isTyping={isTyping} />
+      ) : (
+        <WelcomeScreen onSend={handleSend} />
+      )}
+
+      {/* Input always at the bottom */}
+      <ChatInput onSend={handleSend} disabled={isTyping} />
+
     </div>
   );
 }
