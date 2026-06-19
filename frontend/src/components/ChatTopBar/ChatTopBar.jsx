@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useChatStore } from "../../store/chatStore";
 import { useAuthStore } from "../../store/authStore";
@@ -18,6 +19,13 @@ function ChatTopBar() {
   const navigate = useNavigate();
   const { toggleSidebar, sidebarOpen, getActiveConversation, newConversation } = useChatStore();
   const { user } = useAuthStore();
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 560);
+
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 560);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
 
   const activeConv = getActiveConversation();
   const title = activeConv?.title ?? "Car Specialist GPT";
@@ -38,8 +46,8 @@ function ChatTopBar() {
       borderBottom: "1px solid var(--border-subtle)",
       display: "flex",
       alignItems: "center",
-      padding: "0 16px",
-      gap: "12px",
+      padding: "0 12px",
+      gap: "10px",
       flexShrink: 0,
       zIndex: 10,
     }}>
@@ -50,11 +58,10 @@ function ChatTopBar() {
         title={sidebarOpen ? "Close sidebar" : "Open sidebar"}
         style={{
           width: "32px", height: "32px", borderRadius: "8px",
-          background: "none", border: "1px solid var(--border-subtle)",
+          background: "none", border: "1px solid var(--border-subtle)", outline: "none",
           display: "flex", alignItems: "center", justifyContent: "center",
           color: "var(--text-secondary)", cursor: "pointer",
-          flexShrink: 0,
-          transition: "all 0.12s ease",
+          flexShrink: 0, transition: "all 0.12s ease",
         }}
         onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-surface)"; e.currentTarget.style.color = "var(--text-primary)"; }}
         onMouseLeave={(e) => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "var(--text-secondary)"; }}
@@ -65,25 +72,30 @@ function ChatTopBar() {
       {/* Current chat title */}
       <span style={{
         flex: 1,
-        fontSize: "14px",
+        fontSize: isMobile ? "13px" : "14px",
         fontWeight: 600,
         color: "var(--text-primary)",
         overflow: "hidden",
         textOverflow: "ellipsis",
         whiteSpace: "nowrap",
         letterSpacing: "-0.01em",
+        minWidth: 0,
       }}>
         {title}
       </span>
 
-      {/* New chat */}
+      {/* New chat — icon only on mobile */}
       <button
         onClick={handleNewChat}
         title="New chat"
         style={{
-          display: "flex", alignItems: "center", gap: "6px",
-          background: "none", border: "1px solid var(--border-subtle)",
-          borderRadius: "8px", padding: "6px 12px",
+          display: "flex", alignItems: "center", gap: isMobile ? "0" : "6px",
+          background: "none", border: "1px solid var(--border-subtle)", outline: "none",
+          borderRadius: "8px",
+          padding: isMobile ? "6px" : "6px 12px",
+          width: isMobile ? "32px" : "auto",
+          height: isMobile ? "32px" : "auto",
+          justifyContent: "center",
           fontSize: "12.5px", fontWeight: 500,
           color: "var(--text-secondary)", cursor: "pointer",
           fontFamily: "inherit", transition: "all 0.12s ease",
@@ -92,7 +104,8 @@ function ChatTopBar() {
         onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-surface)"; e.currentTarget.style.color = "var(--text-primary)"; e.currentTarget.style.borderColor = "var(--border-strong)"; }}
         onMouseLeave={(e) => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "var(--text-secondary)"; e.currentTarget.style.borderColor = "var(--border-subtle)"; }}
       >
-        <PlusIcon /> New chat
+        <PlusIcon />
+        {!isMobile && <span>New chat</span>}
       </button>
 
       {/* User avatar */}

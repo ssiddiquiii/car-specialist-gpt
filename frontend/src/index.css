@@ -98,10 +98,33 @@ a { text-decoration: none; color: inherit; }
 button { cursor: pointer; font-family: inherit; }
 img { max-width: 100%; display: block; }
 
+/* ─── Remove browser default focus outlines on all buttons ── */
+button:focus        { outline: none; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+input:focus         { outline: none; }
+textarea:focus      { outline: none; }
+
 /* ─── Scrollbar ─────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg-surface); }
 ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
+
+/* ─── Responsive: Sidebar overlay on mobile ─────────────── */
+@media (max-width: 768px) {
+  .sidebar-overlay { display: block !important; }
+}
+
+/* ─── Responsive: Welcome screen suggestion grid ─────────── */
+@media (max-width: 560px) {
+  .suggestions-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ─── Responsive: Chat input max-width ──────────────────── */
+@media (max-width: 480px) {
+  .chat-input-wrap { padding: 8px 10px 12px !important; }
+}
+
+
 
 /* ═══════════════════════════════════════════════════════════
    ANIMATIONS

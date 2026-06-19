@@ -1,6 +1,18 @@
+import { useState, useEffect } from "react";
 import { useChatStore } from "../../store/chatStore";
 import ChatWindow from "../../components/ChatWindow/ChatWindow";
 import ChatInput from "../../components/ChatInput/ChatInput";
+
+/* ─── Mobile hook ────────────────────────────────────────── */
+function useIsMobile(breakpoint = 560) {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < breakpoint);
+  useEffect(() => {
+    const h = () => setIsMobile(window.innerWidth < breakpoint);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
+  }, [breakpoint]);
+  return isMobile;
+}
 
 /* ─── Suggestion prompts ─────────────────────────────────── */
 const SUGGESTIONS = [
@@ -54,6 +66,7 @@ const FEATURES = [
 
 /* ─── Welcome / Empty State ──────────────────────────────── */
 function WelcomeScreen({ onSend }) {
+  const isMobile = useIsMobile(560);
   return (
     <div style={{
       flex: 1,
@@ -99,7 +112,7 @@ function WelcomeScreen({ onSend }) {
 
         {/* Suggestion cards */}
         <div style={{
-          display: "grid", gridTemplateColumns: "repeat(2, 1fr)",
+          display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)",
           gap: "10px", width: "100%",
           animation: "fadeUp 0.5s ease 0.1s both",
         }}>

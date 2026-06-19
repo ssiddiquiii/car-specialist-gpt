@@ -201,6 +201,9 @@ function Sidebar() {
     ? user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
     : "U";
 
+  // Detect mobile
+  const isMobile = typeof window !== "undefined" && window.innerWidth <= 768;
+
   return (
     <aside
       style={{
@@ -214,7 +217,9 @@ function Sidebar() {
         overflow: "hidden",
         transition: "width 0.25s ease, min-width 0.25s ease",
         flexShrink: 0,
-        position: "relative",
+        // On mobile: float above content
+        position: isMobile && sidebarOpen ? "fixed" : "relative",
+        left: 0, top: 0,
         zIndex: 45,
       }}
     >
@@ -244,7 +249,7 @@ function Sidebar() {
               display: "flex", alignItems: "center", gap: "8px",
               background: "var(--btn-dark-bg)",
               color: "var(--btn-dark-text)",
-              border: "none",
+              border: "none", outline: "none",
               borderRadius: "var(--radius-sm)",
               padding: "9px 14px",
               fontSize: "13px", fontWeight: 600, fontFamily: "inherit",
@@ -300,7 +305,7 @@ function Sidebar() {
             style={{
               width: "100%",
               display: "flex", alignItems: "center", gap: "10px",
-              background: "none", border: "none",
+              background: "none", border: "none", outline: "none",
               padding: "8px 10px", borderRadius: "var(--radius-sm)",
               cursor: "pointer", fontFamily: "inherit",
               color: "var(--text-secondary)", fontSize: "13px",
@@ -355,7 +360,7 @@ function Sidebar() {
               title="Sign out"
               style={{
                 width: "28px", height: "28px", borderRadius: "6px",
-                background: "none", border: "none", flexShrink: 0,
+                background: "none", border: "none", outline: "none", flexShrink: 0,
                 display: "flex", alignItems: "center", justifyContent: "center",
                 color: "var(--text-muted)", cursor: "pointer",
                 transition: "all 0.12s ease",
