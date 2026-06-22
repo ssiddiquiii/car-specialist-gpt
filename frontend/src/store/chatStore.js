@@ -21,20 +21,7 @@ function createMessage(role, content) {
   };
 }
 
-/* ── Mock AI responses (replaced in Day 5 with real API) ── */
-const MOCK_RESPONSES = [
-  "Great question! Based on your query, I'd recommend checking the manufacturer's specifications first. For most modern vehicles, you'll want to follow the service schedule outlined in your owner's manual.\n\n**Key points to consider:**\n- Mileage intervals (usually every 5,000–10,000 km)\n- Driving conditions (city vs highway)\n- Vehicle age and model year\n\nWould you like more specific advice for your car model?",
-  "That's a common concern among car owners. Here's what you need to know:\n\n1. **Check the warning lights** — your dashboard will usually alert you first\n2. **Listen for unusual sounds** — grinding, squealing, or knocking\n3. **Feel for vibrations** — especially during braking or acceleration\n\nI'd recommend getting a professional inspection if you're unsure. Safety should always come first! 🚗",
-  "Excellent choice to research before buying! Here's a quick breakdown:\n\n| Factor | Details |\n|--------|--------|\n| Fuel efficiency | 15–18 km/L (highway) |\n| Maintenance cost | Low to moderate |\n| Reliability | Above average |\n| Resale value | Strong |\n\nOverall, this is a solid option for most drivers. Do you have any specific concerns about budget or features?",
-  "For your situation, here's my expert recommendation:\n\nThe **5W-30** grade is typically better for year-round use in most climates. It flows well in cold starts while maintaining viscosity at operating temperature.\n\n> **Pro tip:** Always check your car's dipstick after an oil change and again after the first few hundred kilometers.\n\nLet me know if you need help finding the right oil brand for your engine!",
-];
-
-let mockIndex = 0;
-function getMockResponse() {
-  const r = MOCK_RESPONSES[mockIndex % MOCK_RESPONSES.length];
-  mockIndex++;
-  return r;
-}
+/* ── AI integration via FastAPI backend ── */
 
 export const useChatStore = create((set, get) => ({
   // All conversations for the sidebar
@@ -102,10 +89,9 @@ export const useChatStore = create((set, get) => ({
    * In Day 5 this will call the real FastAPI backend.
    */
   sendMessage: async (content) => {
-    const { activeConversationId, newConversation } = get();
+    let convId = get().activeConversationId;
 
-    // Ensure there's an active conversation
-    let convId = activeConversationId;
+    // If no active convo, create one
     if (!convId) {
       convId = get().newConversation();
     }
@@ -129,21 +115,48 @@ export const useChatStore = create((set, get) => ({
       ),
     }));
 
-    // Simulate network delay (1.2 – 2.4s)
-    const delay = 1200 + Math.random() * 1200;
-    await new Promise((r) => setTimeout(r, delay));
+    // Send request to FastAPI backend
+    try {
+      // Get the updated messages for this conversation
+      const currentConvo = get().conversations.find((c) => c.id === convId);
+      // We only send the role and content to the API
+      const apiMessages = currentConvo.messages.map(m => ({ role: m.role, content: m.content }));
 
-    const aiMsg = createMessage("assistant", getMockResponse());
+      const response = await fetch("http://localhost:8000/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: apiMessages })
+      });
 
-    // Add AI message + stop typing
-    set((state) => ({
-      isTyping: false,
-      conversations: state.conversations.map((c) =>
-        c.id === convId
-          ? { ...c, messages: [...c.messages, aiMsg] }
-          : c
-      ),
-    }));
+      if (!response.ok) {
+        throw new Error(`API error: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const aiMsg = createMessage("assistant", data.reply);
+
+      // Add AI message + stop typing
+      set((state) => ({
+        isTyping: false,
+        conversations: state.conversations.map((c) =>
+          c.id === convId
+            ? { ...c, messages: [...c.messages, aiMsg] }
+            : c
+        ),
+      }));
+    } catch (error) {
+      console.error("Failed to send message:", error);
+      
+      const errorMsg = createMessage("assistant", "⚠️ **Error:** Failed to connect to the backend server. Please make sure the FastAPI server is running.");
+      set((state) => ({
+        isTyping: false,
+        conversations: state.conversations.map((c) =>
+          c.id === convId
+            ? { ...c, messages: [...c.messages, errorMsg] }
+            : c
+        ),
+      }));
+    }
   },
 
   /** Toggle sidebar */
