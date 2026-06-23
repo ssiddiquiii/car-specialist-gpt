@@ -1,10 +1,10 @@
 # Car Specialist GPT
 
-An AI-powered automotive assistant designed to provide intelligent, context-aware, and conversational support for vehicle-related queries. This project features a custom fine-tuned **Gemma-2B** model hosted on a cloud GPU (Kaggle), interacting with a sleek React-based user interface.
+An AI-powered automotive assistant designed to provide intelligent, context-aware, and conversational support for vehicle-related queries. This project features a custom fine-tuned **Gemma 4 (2B)** model hosted on a cloud GPU (Kaggle), interacting with a sleek React-based user interface.
 
 ## 🚀 Features
 
-- **Custom Fine-Tuned AI**: Powered by a custom-trained Gemma-2B model specifically fine-tuned on car repair datasets.
+- **Custom Fine-Tuned AI**: Powered by a custom-trained Gemma 4 (2B) model specifically fine-tuned on car repair datasets.
 - **Cloud GPU Hosting**: Model is served remotely via Kaggle using Ngrok and Unsloth for high-performance 4-bit inference.
 - **Modern Chat Interface**: Responsive, interactive, and beautiful UI built with React and Tailwind CSS.
 - **FastAPI Proxy Backend**: Acts as a bridge between the frontend and the cloud model, providing a seamless and secure API layer.
@@ -20,7 +20,7 @@ sequenceDiagram
     participant API as ⚙️ FastAPI Backend
     participant N as 🔗 Ngrok Tunnel
     participant K as 🚀 Kaggle Server
-    participant M as 🧠 Gemma-2B Model
+    participant M as 🧠 Gemma 4 (2B) Model
 
     U->>UI: 1. Asks a Car Question
     UI->>API: 2. Sends Chat History
@@ -48,7 +48,7 @@ sequenceDiagram
 | **Cloud Hosting Server** | Kaggle (GPU T4) + Uvicorn |
 | **Tunneling** | Ngrok |
 | **Model Optimization** | Unsloth (4-bit quantization) |
-| **Base AI Model** | Gemma-2B |
+| **Base AI Model** | Gemma 4 (2B) |
 
 ## ⚙️ How to Run
 

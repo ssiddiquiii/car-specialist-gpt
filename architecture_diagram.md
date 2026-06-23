@@ -9,7 +9,7 @@ sequenceDiagram
     participant API as ⚙️ FastAPI Backend
     participant N as 🔗 Ngrok Tunnel
     participant K as 🚀 Kaggle Server
-    participant M as 🧠 Gemma Model
+    participant M as 🧠 Gemma 4 (2B) Model
 
     U->>UI: 1. Sawal Poochta Hai
     UI->>API: 2. Sends Chat History
