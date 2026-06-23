@@ -13,9 +13,10 @@ from huggingface_hub import InferenceClient
 # Load environment variables
 load_dotenv()
 
-# Groq Configuration
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-GROQ_MODEL = os.getenv("GROQ_MODEL", "gemma2-9b-it")
+# API Configuration
+API_KEY = os.getenv("API_KEY", "dummy_key_if_local")
+MODEL_ID = os.getenv("MODEL_ID", "ssiddiquii/merged-car-specialist-gemma")
+API_URL = os.getenv("API_URL", "https://api.groq.com/openai/v1/chat/completions")
 
 app = FastAPI(title="Car Specialist GPT Backend")
 
@@ -46,20 +47,20 @@ async def chat_endpoint(request: ChatRequest):
     Receives chat history from the frontend and sends it to Groq API.
     """
     
-    if not GROQ_API_KEY or GROQ_API_KEY == "gsk_your_groq_api_key_here":
-        raise HTTPException(status_code=500, detail="Groq API Key is not configured in .env file")
+    if not API_KEY or API_KEY == "your_api_key_here":
+        raise HTTPException(status_code=500, detail="API Key is not configured in .env file")
 
     try:
         hf_messages = [{"role": msg.role, "content": msg.content} for msg in request.messages]
         
-        # Groq API uses the standard OpenAI chat completions endpoint format
-        api_url = "https://api.groq.com/openai/v1/chat/completions"
+        # We use standard OpenAI chat completions endpoint format
+        api_url = API_URL
         headers = {
-            "Authorization": f"Bearer {GROQ_API_KEY}",
+            "Authorization": f"Bearer {API_KEY}",
             "Content-Type": "application/json"
         }
         payload = {
-            "model": GROQ_MODEL,
+            "model": MODEL_ID,
             "messages": hf_messages,
             "max_tokens": 500,
             "temperature": 0.7
@@ -83,4 +84,4 @@ async def chat_endpoint(request: ChatRequest):
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok", "api_configured": GROQ_API_KEY != "gsk_your_groq_api_key_here"}
+    return {"status": "ok", "api_configured": API_KEY != "your_api_key_here"}
