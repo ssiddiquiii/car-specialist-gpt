@@ -1,24 +1,25 @@
 import os
-import requests
-# pyrefly: ignore [missing-import]
 from fastapi import FastAPI, HTTPException
-# pyrefly: ignore [missing-import]
 from fastapi.middleware.cors import CORSMiddleware
-# pyrefly: ignore [missing-import]
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List
 from dotenv import load_dotenv
-from huggingface_hub import InferenceClient
+
+# Try to import Llama, but handle case where it might not be installed yet
+try:
+    from llama_cpp import Llama
+    LLAMA_CPP_AVAILABLE = True
+except ImportError:
+    LLAMA_CPP_AVAILABLE = False
 
 # Load environment variables
 load_dotenv()
 
-# API Configuration
-API_KEY = os.getenv("API_KEY", "dummy_key_if_local")
-MODEL_ID = os.getenv("MODEL_ID", "ssiddiquii/merged-car-specialist-gemma")
-API_URL = os.getenv("API_URL", "https://api.groq.com/openai/v1/chat/completions")
+# We will look for the .gguf file in the current directory or from .env
+# The default name matches Unsloth's default GGUF export for Gemma 2B
+MODEL_PATH = os.getenv("MODEL_PATH", "car_specialist_gemma2b-unsloth.Q4_K_M.gguf")
 
-app = FastAPI(title="Car Specialist GPT Backend")
+app = FastAPI(title="Car Specialist GPT Local Backend")
 
 # Allow requests from Vite frontend
 app.add_middleware(
@@ -29,9 +30,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize Hugging Face Inference Client if token exists
-# If not, it will be initialized later when the user sets it up
-client = None
+# Initialize the model at startup
+llm = None
+
+@app.on_event("startup")
+async def startup_event():
+    global llm
+    if not LLAMA_CPP_AVAILABLE:
+        print("Warning: llama-cpp-python is not installed. Please install it to use the local model.")
+        return
+        
+    if os.path.exists(MODEL_PATH):
+        print(f"Loading local model from {MODEL_PATH}...")
+        try:
+            llm = Llama(
+                model_path=MODEL_PATH,
+                n_ctx=2048, # Context window size
+                n_threads=max(1, (os.cpu_count() or 4) - 1), # Leave 1 core for OS
+                verbose=False, # Set to True for debugging
+                chat_format="gemma" # Use Gemma chat template
+            )
+            print("Model loaded successfully!")
+        except Exception as e:
+            print(f"Failed to load model: {e}")
+    else:
+        print(f"Warning: Model file not found at {MODEL_PATH}. Please place the .gguf file in the backend folder.")
 
 # Pydantic models for request body
 class Message(BaseModel):
@@ -44,44 +67,43 @@ class ChatRequest(BaseModel):
 @app.post("/api/chat")
 async def chat_endpoint(request: ChatRequest):
     """
-    Receives chat history from the frontend and sends it to Groq API.
+    Receives chat history from the frontend and generates a local response using llama-cpp-python.
     """
-    
-    if not API_KEY or API_KEY == "your_api_key_here":
-        raise HTTPException(status_code=500, detail="API Key is not configured in .env file")
+    if not LLAMA_CPP_AVAILABLE:
+        raise HTTPException(status_code=500, detail="llama-cpp-python is not installed. Check server logs.")
+        
+    if llm is None:
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Model not loaded. Please ensure '{MODEL_PATH}' exists in the backend folder and restart the server."
+        )
 
     try:
-        hf_messages = [{"role": msg.role, "content": msg.content} for msg in request.messages]
+        # Format messages for llama_cpp
+        messages = [{"role": msg.role, "content": msg.content} for msg in request.messages]
         
-        # We use standard OpenAI chat completions endpoint format
-        api_url = API_URL
-        headers = {
-            "Authorization": f"Bearer {API_KEY}",
-            "Content-Type": "application/json"
-        }
-        payload = {
-            "model": MODEL_ID,
-            "messages": hf_messages,
-            "max_tokens": 500,
-            "temperature": 0.7
-        }
+        print(f"Generating local response for query: {messages[-1]['content'][:50]}...")
         
-        response = requests.post(api_url, headers=headers, json=payload)
-        try:
-            response.raise_for_status()
-        except requests.exceptions.HTTPError as e:
-            print(f"Groq API Error Details: {response.text}")
-            raise e
+        # Generate response using the built-in chat completion
+        output = llm.create_chat_completion(
+            messages=messages,
+            max_tokens=500,
+            temperature=0.7,
+        )
         
-        data = response.json()
-        reply_content = data["choices"][0]["message"]["content"]
+        reply_content = output["choices"][0]["message"]["content"].strip()
         
         return {"reply": reply_content}
 
     except Exception as e:
-        print(f"Error during API call: {e}")
+        print(f"Error during local inference: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok", "api_configured": API_KEY != "your_api_key_here"}
+    return {
+        "status": "ok", 
+        "llama_installed": LLAMA_CPP_AVAILABLE,
+        "model_loaded": llm is not None,
+        "model_path": MODEL_PATH
+    }

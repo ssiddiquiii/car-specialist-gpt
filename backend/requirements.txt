@@ -3,3 +3,4 @@ uvicorn
 huggingface_hub
 python-dotenv
 pydantic
+llama-cpp-python
