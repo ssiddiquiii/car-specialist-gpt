@@ -14,6 +14,7 @@ function renderMarkdown(text) {
 
     // ── Fenced code block ```
     if (line.trimStart().startsWith("```")) {
+      const startIndex = i;
       const codeLines = [];
       i++;
       while (i < lines.length && !lines[i].trimStart().startsWith("```")) {
@@ -21,7 +22,7 @@ function renderMarkdown(text) {
         i++;
       }
       output.push(
-        <pre key={i} style={{
+        <pre key={startIndex} style={{
           background: "var(--bg-surface)",
           border: "1px solid var(--border-subtle)",
           borderRadius: "var(--radius-sm)",
@@ -42,6 +43,7 @@ function renderMarkdown(text) {
 
     // ── Table  |...|...|
     if (line.includes("|") && line.trim().startsWith("|")) {
+      const startIndex = i;
       const tableLines = [];
       while (i < lines.length && lines[i].includes("|") && lines[i].trim().startsWith("|")) {
         tableLines.push(lines[i]);
@@ -50,7 +52,7 @@ function renderMarkdown(text) {
       // Filter out separator rows (---|---)
       const rows = tableLines.filter((r) => !/^\s*\|[\s\-|]+\|\s*$/.test(r));
       output.push(
-        <div key={i} style={{ overflowX: "auto", margin: "8px 0" }}>
+        <div key={startIndex} style={{ overflowX: "auto", margin: "8px 0" }}>
           <table style={{ borderCollapse: "collapse", width: "100%", fontSize: "13px" }}>
             <tbody>
               {rows.map((row, ri) => {
@@ -80,6 +82,42 @@ function renderMarkdown(text) {
       continue;
     }
 
+    // ── Headings # ## ### ####
+    if (/^#{1,4}\s/.test(line)) {
+      const level = line.match(/^(#{1,4})\s/)[1].length;
+      const text = line.replace(/^#{1,4}\s/, "");
+      const sizes = { 1: "18px", 2: "16px", 3: "14.5px", 4: "13.5px" };
+      const margins = { 1: "14px 0 6px", 2: "12px 0 5px", 3: "10px 0 4px", 4: "8px 0 3px" };
+      output.push(
+        <div key={i} style={{
+          fontSize: sizes[level],
+          fontWeight: 700,
+          color: "var(--text-primary)",
+          margin: margins[level],
+          lineHeight: 1.4,
+          borderBottom: level <= 2 ? "1px solid var(--border-subtle)" : "none",
+          paddingBottom: level <= 2 ? "4px" : "0",
+        }}>
+          {inlineMarkdown(text)}
+        </div>
+      );
+      i++;
+      continue;
+    }
+
+    // ── Horizontal rule ---
+    if (/^[-*_]{3,}$/.test(line.trim())) {
+      output.push(
+        <hr key={i} style={{
+          border: "none",
+          borderTop: "1px solid var(--border-subtle)",
+          margin: "10px 0",
+        }} />
+      );
+      i++;
+      continue;
+    }
+
     // ── Blockquote >
     if (line.startsWith(">")) {
       output.push(
@@ -100,13 +138,14 @@ function renderMarkdown(text) {
 
     // ── Unordered list  -  or  *
     if (/^[-*]\s/.test(line)) {
+      const startIndex = i;
       const items = [];
       while (i < lines.length && /^[-*]\s/.test(lines[i])) {
         items.push(lines[i].slice(2));
         i++;
       }
       output.push(
-        <ul key={i} style={{ paddingLeft: "20px", margin: "6px 0", display: "flex", flexDirection: "column", gap: "3px" }}>
+        <ul key={startIndex} style={{ paddingLeft: "20px", margin: "6px 0", display: "flex", flexDirection: "column", gap: "3px" }}>
           {items.map((item, idx) => (
             <li key={idx} style={{ fontSize: "13.5px", color: "var(--text-primary)", lineHeight: 1.6 }}>
               {inlineMarkdown(item)}
@@ -119,13 +158,14 @@ function renderMarkdown(text) {
 
     // ── Ordered list  1.
     if (/^\d+\.\s/.test(line)) {
+      const startIndex = i;
       const items = [];
       while (i < lines.length && /^\d+\.\s/.test(lines[i])) {
         items.push(lines[i].replace(/^\d+\.\s/, ""));
         i++;
       }
       output.push(
-        <ol key={i} style={{ paddingLeft: "20px", margin: "6px 0", display: "flex", flexDirection: "column", gap: "3px" }}>
+        <ol key={startIndex} style={{ paddingLeft: "20px", margin: "6px 0", display: "flex", flexDirection: "column", gap: "3px" }}>
           {items.map((item, idx) => (
             <li key={idx} style={{ fontSize: "13.5px", color: "var(--text-primary)", lineHeight: 1.6 }}>
               {inlineMarkdown(item)}
