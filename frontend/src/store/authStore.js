@@ -1,10 +1,7 @@
 import { create } from "zustand";
 
-/**
- * Global Authentication Store using Zustand.
- * In Phase 4, this will integrate with the actual backend JWT logic.
- * For Phase 2, we mock the responses.
- */
+const API_BASE = "http://localhost:8000";
+
 export const useAuthStore = create((set) => ({
   user: null,
   token: localStorage.getItem("token") || null,
@@ -12,27 +9,39 @@ export const useAuthStore = create((set) => ({
   isLoading: false,
   error: null,
 
+  fetchUser: async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/me?token=${token}`);
+      if (res.ok) {
+        const user = await res.json();
+        set({ user, isAuthenticated: true });
+      } else {
+        localStorage.removeItem("token");
+        set({ user: null, token: null, isAuthenticated: false });
+      }
+    } catch (e) {
+      console.warn("Auth fetch error:", e);
+    }
+  },
+
   login: async (email, password) => {
     set({ isLoading: true, error: null });
     try {
-      // Mock API delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const res = await fetch(`${API_BASE}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      
+      if (!res.ok) throw new Error(data.detail || "Login failed");
 
-      if (email === "test@example.com" && password === "password123") {
-        const dummyToken = "mock_jwt_token_12345";
-        const dummyUser = { id: 1, name: "Test User", email };
-        
-        localStorage.setItem("token", dummyToken);
-        set({
-          user: dummyUser,
-          token: dummyToken,
-          isAuthenticated: true,
-          isLoading: false,
-        });
-        return { success: true };
-      } else {
-        throw new Error("Invalid email or password");
-      }
+      localStorage.setItem("token", data.access_token);
+      set({ token: data.access_token, isAuthenticated: true, isLoading: false });
+      
+      return { success: true };
     } catch (error) {
       set({ error: error.message, isLoading: false });
       return { success: false, error: error.message };
@@ -42,22 +51,21 @@ export const useAuthStore = create((set) => ({
   register: async (name, email, password) => {
     set({ isLoading: true, error: null });
     try {
-      // Mock API delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      
-      const dummyToken = "mock_jwt_token_67890";
-      const dummyUser = { id: 2, name, email };
-
-      localStorage.setItem("token", dummyToken);
-      set({
-        user: dummyUser,
-        token: dummyToken,
-        isAuthenticated: true,
-        isLoading: false,
+      const res = await fetch(`${API_BASE}/api/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password })
       });
+      const data = await res.json();
+      
+      if (!res.ok) throw new Error(data.detail || "Registration failed");
+
+      localStorage.setItem("token", data.access_token);
+      set({ token: data.access_token, isAuthenticated: true, isLoading: false });
+      
       return { success: true };
     } catch (error) {
-      set({ error: "Registration failed", isLoading: false });
+      set({ error: error.message, isLoading: false });
       return { success: false, error: error.message };
     }
   },
@@ -65,5 +73,6 @@ export const useAuthStore = create((set) => ({
   logout: () => {
     localStorage.removeItem("token");
     set({ user: null, token: null, isAuthenticated: false, error: null });
+    window.location.href = "/login";
   },
 }));

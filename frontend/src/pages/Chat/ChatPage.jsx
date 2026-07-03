@@ -172,9 +172,10 @@ function WelcomeScreen({ onSend }) {
 
 /* ─── ChatPage ───────────────────────────────────────────── */
 function ChatPage() {
-  const { getActiveConversation, sendMessage, isTyping } = useChatStore();
+  const { getActiveConversation, sendMessage, isTyping, dualResponse } = useChatStore();
   const activeConv = getActiveConversation();
   const hasMessages = (activeConv?.messages?.length ?? 0) > 0;
+  const inputDisabled = isTyping || !!dualResponse;
 
   const handleSend = (text) => {
     if (!text.trim()) return;
@@ -185,14 +186,14 @@ function ChatPage() {
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
       {/* Show welcome screen OR message thread */}
-      {hasMessages ? (
-        <ChatWindow messages={activeConv.messages} isTyping={isTyping} />
+      {hasMessages || dualResponse ? (
+        <ChatWindow messages={activeConv?.messages ?? []} isTyping={isTyping} dualResponse={dualResponse} />
       ) : (
         <WelcomeScreen onSend={handleSend} />
       )}
 
-      {/* Input always at the bottom */}
-      <ChatInput onSend={handleSend} disabled={isTyping} />
+      {/* Input always at the bottom — disabled while dual card is open */}
+      <ChatInput onSend={handleSend} disabled={inputDisabled} />
 
     </div>
   );

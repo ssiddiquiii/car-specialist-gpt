@@ -1,14 +1,15 @@
 import { useEffect, useRef } from "react";
 import ChatMessage from "../ChatMessage/ChatMessage";
 import TypingIndicator from "../TypingIndicator/TypingIndicator";
+import DualResponseCard from "../DualResponseCard/DualResponseCard";
 
-function ChatWindow({ messages, isTyping }) {
+function ChatWindow({ messages, isTyping, dualResponse }) {
   const bottomRef = useRef(null);
 
-  // Auto-scroll to bottom whenever messages change or typing starts
+  // Auto-scroll to bottom whenever messages change, typing starts, or dual response arrives
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isTyping]);
+  }, [messages, isTyping, dualResponse]);
 
   return (
     <div style={{
@@ -28,6 +29,9 @@ function ChatWindow({ messages, isTyping }) {
 
         {isTyping && <TypingIndicator />}
 
+        {/* Dual response comparison cards */}
+        {dualResponse && !isTyping && <DualResponseCard />}
+
         {/* Invisible anchor for auto-scroll */}
         <div ref={bottomRef} style={{ height: "1px" }} />
       </div>
@@ -36,3 +40,4 @@ function ChatWindow({ messages, isTyping }) {
 }
 
 export default ChatWindow;
+

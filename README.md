@@ -1,85 +1,77 @@
-# Car Specialist GPT
+# Car Specialist GPT 🚗
 
-An AI-powered automotive assistant designed to provide intelligent, context-aware, and conversational support for vehicle-related queries. This project features a custom fine-tuned **Gemma 4 (2B)** model hosted on a cloud GPU (Kaggle), interacting with a sleek React-based user interface.
+A local, offline-capable AI chat application specialized in cars. This project consists of a Python FastAPI backend (which interfaces with a local LLM via `llama-server.exe`) and a React/Vite frontend.
 
-## 🚀 Features
-
-- **Custom Fine-Tuned AI**: Powered by a custom-trained Gemma 4 (2B) model specifically fine-tuned on car repair datasets.
-- **Cloud GPU Hosting**: Model is served remotely via Kaggle using Ngrok and Unsloth for high-performance 4-bit inference.
-- **Modern Chat Interface**: Responsive, interactive, and beautiful UI built with React and Tailwind CSS.
-- **FastAPI Proxy Backend**: Acts as a bridge between the frontend and the cloud model, providing a seamless and secure API layer.
-
-## 🏗️ System Architecture
-
-The application combines a local React frontend with a local FastAPI backend that securely tunnels requests to a Kaggle-hosted instance of our fine-tuned AI model.
-
-```mermaid
-sequenceDiagram
-    participant U as 👤 You (User)
-    participant UI as 🖥️ React Chat UI
-    participant API as ⚙️ FastAPI Backend
-    participant N as 🔗 Ngrok Tunnel
-    participant K as 🚀 Kaggle Server
-    participant M as 🧠 Gemma 4 (2B) Model
-
-    U->>UI: 1. Asks a Car Question
-    UI->>API: 2. Sends Chat History
-    API->>N: 3. Forward to Ngrok URL (.env)
-    N->>K: 4. Secure Tunnel Routing
-    K->>M: 5. Generates Prompt
-
-    Note over M: Model thinks and generates...
-
-    M-->>K: 6. Returns Generated Answer
-    K-->>N: 7. Returns JSON Response
-    N-->>API: 8. Receives JSON
-    API-->>UI: 9. Forwards to UI
-    UI-->>U: 10. Shows Answer on Screen
-```
-
-## 🛠️ Technology Stack
-
-| Category | Technology |
-|----------|------------|
-| **Frontend Framework** | React + Vite |
-| **Styling** | Tailwind CSS |
-| **State Management** | Zustand |
-| **Local Backend** | FastAPI (Python) |
-| **Cloud Hosting Server** | Kaggle (GPU T4) + Uvicorn |
-| **Tunneling** | Ngrok |
-| **Model Optimization** | Unsloth (4-bit quantization) |
-| **Base AI Model** | Gemma 4 (2B) |
-
-## ⚙️ How to Run
-
-### 1. Host the Model (Kaggle)
-1. Open a new Kaggle notebook with GPU T4 enabled and Internet turned ON.
-2. Run the provided hosting script using Unsloth and PyNgrok.
-3. Copy the generated `Ngrok Public URL`.
-
-### 2. Run Local Backend
-1. Create a `backend/.env` file and paste the Ngrok URL:
-   ```env
-   API_URL=https://your-ngrok-url.ngrok-free.dev/v1/chat/completions
-   MODEL_ID=ssiddiquii/merged-car-specialist-gemma
-   API_KEY=dummy_key
-   ```
-2. Start the FastAPI server:
-   ```bash
-   cd backend
-   uvicorn main:app --reload --port 8000
-   ```
-
-### 3. Run Frontend
-1. Open a new terminal:
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
-2. Open your browser to `http://localhost:5173` and start chatting with your AI mechanic!
+## 🌟 Features
+- **100% Offline AI:** The backend runs a local LLM model (Llama) directly on your machine. No internet connection is required for generating responses!
+- **Dual Response System:** Get two different AI completions for your prompt and choose the best one.
+- **Persistent Chat History:** All your chats and preferences are saved locally in MongoDB.
+- **Authentication:** Secure user registration and login system.
 
 ---
 
-## 📜 License
-This project is licensed under the MIT License.
+## 🛠️ Prerequisites
+
+Before you start, make sure you have the following installed on your system:
+1. **Node.js** (v18 or higher) for the frontend.
+2. **Python** (v3.10 or higher) for the backend.
+3. **MongoDB** running locally on default port `27017`.
+
+---
+
+## 🚀 How to Start the Project Manually
+
+You will need to open **two** separate terminal windows: one for the backend and one for the frontend.
+
+### 1. Start the Backend (Terminal 1)
+The backend manages the database, authentication, and the local AI model.
+
+1. Open a terminal and navigate to the `backend` folder:
+   ```bash
+   cd backend
+   ```
+2. Activate the Python virtual environment:
+   - **Windows:**
+     ```bash
+     .\venv\Scripts\activate
+     ```
+   - **Mac/Linux:**
+     ```bash
+     source venv/bin/activate
+     ```
+3. Start the FastAPI server:
+   ```bash
+   uvicorn main:app --reload --port 8000
+   ```
+*The backend will now be running at `http://localhost:8000`. Keep this terminal open.*
+
+### 2. Start the Frontend (Terminal 2)
+The frontend is the React user interface.
+
+1. Open a new terminal and navigate to the `frontend` folder:
+   ```bash
+   cd frontend
+   ```
+2. (Optional) If this is your first time or you added packages, install dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the Vite development server:
+   ```bash
+   npm run dev
+   ```
+*The frontend will now be running (usually at `http://localhost:5173`). Open this link in your browser.*
+
+---
+
+## 🔌 How to Verify it's Running Offline
+
+To prove that the AI and the application run completely offline:
+1. **Start the project** using the steps above while connected to the internet.
+2. **Turn off your Wi-Fi** or disconnect your ethernet cable.
+3. **Open the app** in your browser (`http://localhost:5173`).
+4. **Log in** (or register a new account). Your data is being saved to your local MongoDB.
+5. **Send a prompt** (e.g., "What are the best SUVs in 2024?").
+6. You will see the AI typing out the response in real-time! 
+
+Since the backend communicates with `llama-server.exe` running locally on your hardware, no external API calls (like OpenAI) are made. It is completely private and offline.

@@ -23,6 +23,7 @@ backend/*.gguf
 backend/llama-bin/
 backend/llama-server.log
 backend/llama-server.exe
+backend/*.zip
 
 # IDE & OS
 .vscode/

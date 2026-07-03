@@ -3,9 +3,16 @@ import { Outlet } from "react-router-dom";
 import Sidebar from "../components/Sidebar/Sidebar";
 import ChatTopBar from "../components/ChatTopBar/ChatTopBar";
 import { useChatStore } from "../store/chatStore";
+import { useAuthStore } from "../store/authStore";
 
 function ChatLayout() {
-  const { sidebarOpen, setSidebarOpen } = useChatStore();
+  const { sidebarOpen, setSidebarOpen, fetchConversations } = useChatStore();
+  const { fetchUser } = useAuthStore();
+
+  useEffect(() => {
+    fetchUser();
+    fetchConversations();
+  }, [fetchUser, fetchConversations]);
 
   // Close sidebar on small screens by default
   useEffect(() => {
