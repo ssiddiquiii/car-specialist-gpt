@@ -64,29 +64,35 @@ Jab unhen demo dain, toh batayen ke *"Baaki sab external APIs use kar rahay hain
 Yeh diagram aapki slide mein lagane ke liye perfect hai jo pure flow ko visualizes karta hai:
 
 ```mermaid
-flowchart TD
-    A([User types a Question]) --> B[React.js Frontend]
+flowchart LR
+    A([User Question]) --> B[React Frontend]
+    B -->|POST| C{FastAPI Backend}
     
-    B -->|POST /api/chat/dual| C{FastAPI Backend}
+    subgraph Local_LLM_Cluster [Local LLM Cluster]
+        D[llama-server\nTemp: 0.7]
+        E[llama-server\nTemp: 0.95]
+    end
     
-    C -->|Prompt A| D[llama-server.exe\nTemp: 0.7 Factual]
-    C -->|Prompt B| E[llama-server.exe\nTemp: 0.95 Creative]
+    C -->|Prompt A| D
+    C -->|Prompt B| E
     
-    D -->|Generated Tokens| F((SSE Streaming))
-    E -->|Generated Tokens| F
+    D -.->|SSE Stream| F((Backend Streamer))
+    E -.->|SSE Stream| F
     
-    F -->|Real-time update| G[React UI: Dual Response Card]
+    F -->|Real-time Tokens| G[Dual Response UI]
     
-    G --> H([User Evaluates & Selects Answer])
+    G --> H([User Evaluates & Selects])
     
-    H -->|Save RLHF Preference| I[(MongoDB Atlas Cloud)]
-    H -->|Append to Chat| J([Chat History Updated])
+    H -->|Save Preference| I[(MongoDB Atlas)]
+    H -->|Update Chat| J([Chat History])
     
     style A fill:#4CAF50,stroke:#388E3C,stroke-width:2px,color:#fff
     style B fill:#61DAFB,stroke:#000,stroke-width:2px,color:#000
     style C fill:#059669,stroke:#047857,stroke-width:2px,color:#fff
     style D fill:#F59E0B,stroke:#D97706,stroke-width:2px,color:#fff
     style E fill:#F59E0B,stroke:#D97706,stroke-width:2px,color:#fff
-    style I fill:#10B981,stroke:#059669,stroke-width:2px,color:#fff
+    style F fill:#8B5CF6,stroke:#6D28D9,stroke-width:2px,color:#fff
+    style G fill:#EC4899,stroke:#BE185D,stroke-width:2px,color:#fff
     style H fill:#3B82F6,stroke:#2563EB,stroke-width:2px,color:#fff
+    style I fill:#10B981,stroke:#059669,stroke-width:2px,color:#fff
 ```
