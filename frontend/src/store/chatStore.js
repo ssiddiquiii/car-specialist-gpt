@@ -40,6 +40,9 @@ export const useChatStore = create((set, get) => ({
   dualResponse: null,
   // { prompt, conversation_id, user_id, response_a, response_b, context }
 
+  // AbortController to allow stopping generation midway
+  abortController: null,
+
   // ── Actions ────────────────────────────────────────────────
 
   /** Fetch all conversations from backend */
@@ -199,9 +202,17 @@ export const useChatStore = create((set, get) => ({
         content: m.content,
       }));
 
+      // If a previous request is still running, abort it
+      if (get().abortController) {
+        get().abortController.abort();
+      }
+      const abortController = new AbortController();
+      set({ abortController });
+
       const response = await fetch(`${API_BASE}/api/chat/dual`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: abortController.signal,
         body: JSON.stringify({
           messages: apiMessages,
           conversation_id: convId,
@@ -231,10 +242,29 @@ export const useChatStore = create((set, get) => ({
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
+      
+      let pendingA = "";
+      let pendingB = "";
+      let lastUpdateTime = Date.now();
 
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) {
+          // Flush any remaining chunks
+          if (pendingA || pendingB) {
+            set((state) => {
+              if (!state.dualResponse) return state;
+              return {
+                dualResponse: {
+                  ...state.dualResponse,
+                  response_a: { ...state.dualResponse.response_a, content: state.dualResponse.response_a.content + pendingA },
+                  response_b: { ...state.dualResponse.response_b, content: state.dualResponse.response_b.content + pendingB }
+                }
+              };
+            });
+          }
+          break;
+        }
         
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
@@ -255,25 +285,9 @@ export const useChatStore = create((set, get) => ({
                   return { dualResponse: { ...state.dualResponse, prompt: msg.prompt } };
                 });
               } else if (msg.type === "stream_a") {
-                set((state) => {
-                  if (!state.dualResponse) return state;
-                  return {
-                    dualResponse: {
-                      ...state.dualResponse,
-                      response_a: { ...state.dualResponse.response_a, content: state.dualResponse.response_a.content + msg.chunk }
-                    }
-                  };
-                });
+                pendingA += msg.chunk;
               } else if (msg.type === "stream_b") {
-                set((state) => {
-                  if (!state.dualResponse) return state;
-                  return {
-                    dualResponse: {
-                      ...state.dualResponse,
-                      response_b: { ...state.dualResponse.response_b, content: state.dualResponse.response_b.content + msg.chunk }
-                    }
-                  };
-                });
+                pendingB += msg.chunk;
               } else if (msg.type === "stream_a_done") {
                 set((state) => {
                   if (!state.dualResponse) return state;
@@ -300,17 +314,45 @@ export const useChatStore = create((set, get) => ({
             }
           }
         }
+        
+        // Throttled state update (flush every 50ms) to ensure smooth scrolling and rendering
+        if (Date.now() - lastUpdateTime > 50 && (pendingA || pendingB)) {
+          set((state) => {
+            if (!state.dualResponse) return state;
+            return {
+              dualResponse: {
+                ...state.dualResponse,
+                response_a: { ...state.dualResponse.response_a, content: state.dualResponse.response_a.content + pendingA },
+                response_b: { ...state.dualResponse.response_b, content: state.dualResponse.response_b.content + pendingB }
+              }
+            };
+          });
+          pendingA = "";
+          pendingB = "";
+          lastUpdateTime = Date.now();
+        }
       }
       
       // Mark stream as complete when loop finishes
       set((state) => {
         if (!state.dualResponse) return state;
         return {
+          abortController: null,
           dualResponse: { ...state.dualResponse, streaming_complete: true }
         };
       });
 
     } catch (error) {
+      if (error.name === 'AbortError') {
+        console.log("Generation stopped by user");
+        set({ abortController: null });
+        set((state) => {
+          if (!state.dualResponse) return state;
+          return { dualResponse: { ...state.dualResponse, streaming_complete: true } };
+        });
+        return;
+      }
+      
       console.error("Failed to send message:", error);
       const errorMsg = createMessage(
         "assistant",
@@ -319,12 +361,23 @@ export const useChatStore = create((set, get) => ({
       set((state) => ({
         isTyping: false,
         dualResponse: null,
+        abortController: null,
         conversations: state.conversations.map((c) =>
           c.id === convId
             ? { ...c, messages: [...c.messages, errorMsg] }
             : c
         ),
       }));
+    }
+  },
+
+  /**
+   * Stop the ongoing generation
+   */
+  stopGeneration: () => {
+    const { abortController } = get();
+    if (abortController) {
+      abortController.abort();
     }
   },
 

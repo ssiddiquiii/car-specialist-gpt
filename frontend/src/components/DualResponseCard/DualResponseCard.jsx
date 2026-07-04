@@ -100,7 +100,9 @@ function ResponseCard({ label, response, onChoose, isChosen, disabled }) {
 }
 
 function DualResponseCard() {
-  const { dualResponse, chooseDualResponse } = useChatStore();
+  const dualResponse = useChatStore((state) => state.dualResponse);
+  const chooseDualResponse = useChatStore((state) => state.chooseDualResponse);
+  const stopGeneration = useChatStore((state) => state.stopGeneration);
   const [chosen, setChosen] = useState(null); // 'a', 'b', or 'skipped'
 
   if (!dualResponse) return null;
@@ -157,8 +159,28 @@ function DualResponseCard() {
               <div className="typing-dot" style={{ animationDelay: "0.4s" }}></div>
             </div>
           )}
-          {/* Skip button */}
-          {!chosen && !isStreaming && (
+          
+          {/* Stop / Skip button */}
+          {isStreaming ? (
+            <button
+              onClick={() => stopGeneration()}
+              style={{
+                display: "flex", alignItems: "center", gap: "4px",
+                fontSize: "11px", padding: "5px 12px", borderRadius: "var(--radius-full)",
+                border: "1px solid var(--border-subtle)", background: "transparent",
+                color: "var(--text-muted)", cursor: "pointer", fontFamily: "inherit",
+                transition: "all 0.15s ease",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--text-muted)"; e.currentTarget.style.color = "var(--text-primary)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border-subtle)"; e.currentTarget.style.color = "var(--text-muted)"; }}
+              title="Stop Generation"
+            >
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="4" y="4" width="16" height="16" rx="2" />
+              </svg>
+              Stop
+            </button>
+          ) : !chosen && (
             <button
               onClick={() => handleChoose("skipped")}
               style={{

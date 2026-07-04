@@ -5,14 +5,27 @@ import DualResponseCard from "../DualResponseCard/DualResponseCard";
 
 function ChatWindow({ messages, isTyping, dualResponse }) {
   const bottomRef = useRef(null);
+  const containerRef = useRef(null);
 
   // Auto-scroll to bottom whenever messages change, typing starts, or dual response arrives
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (containerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
+      // Scroll if near bottom or if it's a new typing state
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 200;
+      
+      if (isNearBottom || isTyping) {
+        bottomRef.current?.scrollIntoView({ behavior: "auto" }); // 'auto' avoids animation jitter during streaming
+      }
+    } else {
+      bottomRef.current?.scrollIntoView({ behavior: "auto" });
+    }
   }, [messages, isTyping, dualResponse]);
 
   return (
-    <div style={{
+    <div 
+      ref={containerRef}
+      style={{
       flex: 1,
       overflowY: "auto",
       padding: "24px 16px 8px",
@@ -23,8 +36,8 @@ function ChatWindow({ messages, isTyping, dualResponse }) {
       {/* Max width centering wrapper */}
       <div style={{ maxWidth: "760px", width: "100%", margin: "0 auto", display: "flex", flexDirection: "column", gap: "20px" }}>
 
-        {messages.map((msg) => (
-          <ChatMessage key={msg.id} message={msg} />
+        {messages.map((msg, idx) => (
+          <ChatMessage key={`msg-${idx}`} message={msg} />
         ))}
 
         {isTyping && <TypingIndicator />}

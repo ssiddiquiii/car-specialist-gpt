@@ -75,7 +75,7 @@ async def startup_event():
         LLAMA_SERVER_EXE,
         "-m", MODEL_PATH,
         "--port", LLAMA_SERVER_PORT,
-        "-c", "4096",          # Context window
+        "-c", "8192",          # Context window (divided by parallel slots)
         "-t", threads,
         "--parallel", "2"      # Allow 2 parallel inference slots
     ]
@@ -118,7 +118,7 @@ async def stream_llm(client: httpx.AsyncClient, messages: list, temperature: flo
     """
     payload = {
         "messages": messages,
-        "max_tokens": 2000,
+        "max_tokens": 1024,
         "temperature": temperature,
         "stream": True
     }
