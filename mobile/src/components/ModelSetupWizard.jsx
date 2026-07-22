@@ -4,7 +4,7 @@ import { useMobileChatStore } from '../store/mobileChatStore';
 import { MODEL_CONFIGS } from '../services/llamaService';
 
 export default function ModelSetupWizard() {
-  const { isDownloading, downloadProgress, startModelDownload, selectedModelKey } = useMobileChatStore();
+  const { isDownloading, downloadProgress, startModelDownload, selectedModelKey, downloadError } = useMobileChatStore();
 
   return (
     <View style={styles.container}>
@@ -15,9 +15,16 @@ export default function ModelSetupWizard() {
           This app runs 100% offline on your phone! To get started, download the AI model weights.
         </Text>
 
+        {downloadError && (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>⚠️ {downloadError}</Text>
+          </View>
+        )}
+
         {!isDownloading ? (
           <View style={styles.optionsContainer}>
             <TouchableOpacity 
+              activeOpacity={0.7}
               style={[styles.optionBtn, selectedModelKey === 'gemma2b' && styles.optionSelected]}
               onPress={() => startModelDownload('gemma2b')}
             >
@@ -26,6 +33,7 @@ export default function ModelSetupWizard() {
             </TouchableOpacity>
 
             <TouchableOpacity 
+              activeOpacity={0.7}
               style={[styles.optionBtn, selectedModelKey === 'llama1b' && styles.optionSelected]}
               onPress={() => startModelDownload('llama1b')}
             >
@@ -92,5 +100,7 @@ const styles = StyleSheet.create({
   progressBarBg: { width: '100%', height: 10, backgroundColor: '#334155', borderRadius: 5, overflow: 'hidden', marginVertical: 12 },
   progressBarFill: { height: '100%', backgroundColor: '#6366F1' },
   progressDetails: { fontSize: 13, color: '#CBD5E1', marginBottom: 6 },
-  notice: { fontSize: 11, color: '#64748B', fontStyle: 'italic', textAlign: 'center' }
+  notice: { fontSize: 11, color: '#64748B', fontStyle: 'italic', textAlign: 'center' },
+  errorBox: { backgroundColor: '#450A0A', borderColor: '#EF4444', borderWidth: 1, borderRadius: 10, padding: 12, marginBottom: 16, width: '100%' },
+  errorText: { color: '#FCA5A5', fontSize: 12, textAlign: 'center' }
 });

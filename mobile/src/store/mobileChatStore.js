@@ -6,6 +6,7 @@ export const useMobileChatStore = create((set, get) => ({
   // Model Setup State
   isModelReady: false,
   isDownloading: false,
+  downloadError: null,
   downloadProgress: { progressPercent: 0, writtenMB: '0', totalMB: '0' },
   selectedModelKey: 'gemma2b',
 
@@ -32,7 +33,7 @@ export const useMobileChatStore = create((set, get) => ({
   },
 
   startModelDownload: async (modelKey = 'gemma2b') => {
-    set({ isDownloading: true, selectedModelKey: modelKey });
+    set({ isDownloading: true, downloadError: null, selectedModelKey: modelKey });
     try {
       await LlamaService.downloadModel(modelKey, (progress) => {
         set({ downloadProgress: progress });
@@ -42,7 +43,7 @@ export const useMobileChatStore = create((set, get) => ({
       set({ isDownloading: false, isModelReady: true });
     } catch (e) {
       console.error("Download failed:", e);
-      set({ isDownloading: false });
+      set({ isDownloading: false, downloadError: e.message || "Download failed. Please check internet connection." });
     }
   },
 

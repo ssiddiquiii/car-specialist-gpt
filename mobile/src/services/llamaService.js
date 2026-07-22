@@ -7,7 +7,7 @@ export const MODEL_CONFIGS = {
   gemma2b: {
     id: 'gemma-2b-q4',
     name: 'Gemma 2B Specialist (Standard)',
-    url: 'https://huggingface.co/lmstudio-community/gemma-2-2b-it-GGUF/resolve/main/gemma-2-2b-it-Q4_K_M.gguf',
+    url: 'https://huggingface.co/lmstudio-community/gemma-2-2b-it-GGUF/resolve/main/gemma-2-2b-it-Q4_K_M.gguf?download=true',
     fileName: 'gemma-2-2b-it-Q4_K_M.gguf',
     sizeBytes: 1680000000, // ~1.68 GB
     recommendedRamGb: 6,
@@ -15,7 +15,7 @@ export const MODEL_CONFIGS = {
   llama1b: {
     id: 'llama-3.2-1b-q4',
     name: 'Llama 3.2 1B (Ultra-Light for 4GB RAM)',
-    url: 'https://huggingface.co/huggingface/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q4_K_M.gguf',
+    url: 'https://huggingface.co/huggingface/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q4_K_M.gguf?download=true',
     fileName: 'Llama-3.2-1B-Instruct-Q4_K_M.gguf',
     sizeBytes: 880000000, // ~0.88 GB
     recommendedRamGb: 4,
