@@ -1,14 +1,14 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import LlamaService, { MODEL_CONFIGS } from '../services/llamaService';
+import LlamaService, { MODEL_CONFIG } from '../services/llamaService';
 
 export const useMobileChatStore = create((set, get) => ({
-  // Model Setup State
+  // Model & Setup State
+  isCheckingModel: true,
   isModelReady: false,
   isDownloading: false,
   downloadError: null,
   downloadProgress: { progressPercent: 0, writtenMB: '0', totalMB: '0' },
-  selectedModelKey: 'gemma2b',
 
   // Chat State
   conversations: [],
@@ -18,32 +18,44 @@ export const useMobileChatStore = create((set, get) => ({
 
   // Actions
   checkModelStatus: async () => {
-    const key = get().selectedModelKey;
-    const isDownloaded = await LlamaService.isModelDownloaded(MODEL_CONFIGS[key].fileName);
-    if (isDownloaded) {
-      try {
-        await LlamaService.initModel(MODEL_CONFIGS[key].fileName);
-        set({ isModelReady: true });
-      } catch (e) {
-        console.error("Failed to init llama model:", e);
+    set({ isCheckingModel: true, downloadError: null });
+    try {
+      const isDownloaded = await LlamaService.isModelDownloaded();
+      if (isDownloaded) {
+        console.log("[MobileChatStore] Model file found on disk. Initializing Llama Engine...");
+        await LlamaService.initModel();
+        set({ isModelReady: true, isCheckingModel: false });
+      } else {
+        console.log("[MobileChatStore] Model file missing or incomplete.");
+        set({ isModelReady: false, isCheckingModel: false });
       }
-    } else {
-      set({ isModelReady: false });
+    } catch (e) {
+      console.error("[MobileChatStore] Check model status failed:", e);
+      set({ 
+        isModelReady: false, 
+        isCheckingModel: false, 
+        downloadError: e.message || "Failed to initialize Gemma 2B engine. Please ensure device has enough RAM." 
+      });
     }
   },
 
-  startModelDownload: async (modelKey = 'gemma2b') => {
-    set({ isDownloading: true, downloadError: null, selectedModelKey: modelKey });
+  startModelDownload: async () => {
+    set({ isDownloading: true, downloadError: null });
     try {
-      await LlamaService.downloadModel(modelKey, (progress) => {
+      console.log("[MobileChatStore] Starting download for Gemma 2B model...");
+      await LlamaService.downloadModel((progress) => {
         set({ downloadProgress: progress });
       });
-      // After download completes, init engine
-      await LlamaService.initModel(MODEL_CONFIGS[modelKey].fileName);
+
+      console.log("[MobileChatStore] Download finished. Initializing model context...");
+      await LlamaService.initModel();
       set({ isDownloading: false, isModelReady: true });
     } catch (e) {
-      console.error("Download failed:", e);
-      set({ isDownloading: false, downloadError: e.message || "Download failed. Please check internet connection." });
+      console.error("[MobileChatStore] Download or init failed:", e);
+      set({ 
+        isDownloading: false, 
+        downloadError: e.message || "Download or model initialization failed. Please check internet connection and try again." 
+      });
     }
   },
 
@@ -58,18 +70,29 @@ export const useMobileChatStore = create((set, get) => ({
 
     const userMsg = { id: `user_${Date.now()}`, role: 'user', content, timestamp: new Date().toISOString() };
 
-    set((state) => ({
-      isTyping: true,
-      dualResponse: {
-        prompt: content,
-        response_a: { content: '', token_count: 0 },
-        response_b: { content: '', token_count: 0 },
-        streaming_complete: false,
-      },
-      conversations: state.conversations.map((c) =>
-        c.id === convId ? { ...c, messages: [...(c.messages || []), userMsg] } : c
-      )
-    }));
+    set((state) => {
+      const existingConvIndex = state.conversations.findIndex(c => c.id === convId);
+      let updatedConvos = [...state.conversations];
+      if (existingConvIndex >= 0) {
+        updatedConvos[existingConvIndex] = {
+          ...updatedConvos[existingConvIndex],
+          messages: [...(updatedConvos[existingConvIndex].messages || []), userMsg]
+        };
+      } else {
+        updatedConvos.push({ id: convId, title: content.slice(0, 30), messages: [userMsg] });
+      }
+
+      return {
+        isTyping: true,
+        conversations: updatedConvos,
+        dualResponse: {
+          prompt: content,
+          response_a: { content: '', token_count: 0 },
+          response_b: { content: '', token_count: 0 },
+          streaming_complete: false,
+        }
+      };
+    });
 
     try {
       let pendingA = "";
@@ -80,12 +103,12 @@ export const useMobileChatStore = create((set, get) => ({
         [userMsg],
         (tokenA) => {
           pendingA += tokenA;
-          if (Date.now() - lastUpdate > 50) {
+          if (Date.now() - lastUpdate > 60) {
             set((state) => ({
-              dualResponse: {
+              dualResponse: state.dualResponse ? {
                 ...state.dualResponse,
                 response_a: { ...state.dualResponse.response_a, content: state.dualResponse.response_a.content + pendingA }
-              }
+              } : null
             }));
             pendingA = "";
             lastUpdate = Date.now();
@@ -93,12 +116,12 @@ export const useMobileChatStore = create((set, get) => ({
         },
         (tokenB) => {
           pendingB += tokenB;
-          if (Date.now() - lastUpdate > 50) {
+          if (Date.now() - lastUpdate > 60) {
             set((state) => ({
-              dualResponse: {
+              dualResponse: state.dualResponse ? {
                 ...state.dualResponse,
                 response_b: { ...state.dualResponse.response_b, content: state.dualResponse.response_b.content + pendingB }
-              }
+              } : null
             }));
             pendingB = "";
             lastUpdate = Date.now();
@@ -108,15 +131,15 @@ export const useMobileChatStore = create((set, get) => ({
 
       set((state) => ({
         isTyping: false,
-        dualResponse: {
+        dualResponse: state.dualResponse ? {
           ...state.dualResponse,
           response_a: { ...state.dualResponse.response_a, content: state.dualResponse.response_a.content + pendingA },
           response_b: { ...state.dualResponse.response_b, content: state.dualResponse.response_b.content + pendingB },
           streaming_complete: true
-        }
+        } : null
       }));
     } catch (e) {
-      console.error("Local generation failed:", e);
+      console.error("[MobileChatStore] Local generation failed:", e);
       set({ isTyping: false });
     }
   },
