@@ -1,137 +1,196 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Image, Dimensions } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TextInput, 
+  TouchableOpacity, 
+  ScrollView, 
+  Image, 
+  Dimensions, 
+  KeyboardAvoidingView, 
+  Platform 
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMobileChatStore } from '../store/mobileChatStore';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CAROUSEL_WIDTH = SCREEN_WIDTH - 32;
 
 export default function ChatScreen() {
   const insets = useSafeAreaInsets();
   const [input, setInput] = useState('');
-  const [activeTab, setActiveTab] = useState('a'); // 'a' or 'b'
-  const { conversations, activeConversationId, sendMessage, isTyping, dualResponse, stopGeneration, chooseResponse } = useMobileChatStore();
+  const [activeTab, setActiveTab] = useState(0); // 0 for A, 1 for B
+  const [inputHeight, setInputHeight] = useState(44);
+  const scrollViewRef = useRef(null);
+  const carouselRef = useRef(null);
+
+  const { 
+    conversations, 
+    activeConversationId, 
+    sendMessage, 
+    isTyping, 
+    dualResponse, 
+    stopGeneration, 
+    chooseResponse 
+  } = useMobileChatStore();
 
   const currentConvo = conversations.find(c => c.id === activeConversationId) || { messages: [] };
+
+  // Auto-scroll chat list to bottom when messages update or dual response streams
+  useEffect(() => {
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+  }, [currentConvo.messages, dualResponse]);
 
   const handleSend = () => {
     if (!input.trim() || isTyping) return;
     const text = input;
     setInput('');
-    setActiveTab('a'); // Reset tab to A when sending new prompt
+    setInputHeight(44);
+    setActiveTab(0);
     sendMessage(text);
   };
 
+  const handleTabPress = (index) => {
+    setActiveTab(index);
+    carouselRef.current?.scrollTo({ x: index * CAROUSEL_WIDTH, animated: true });
+  };
+
+  const handleScroll = (event) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    const index = Math.round(offsetX / CAROUSEL_WIDTH);
+    if (index !== activeTab && (index === 0 || index === 1)) {
+      setActiveTab(index);
+    }
+  };
+
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-      {/* Top Header */}
-      <View style={styles.header}>
-        <View style={styles.headerTitleGroup}>
-          <Image 
-            source={require('../../assets/icon.png')} 
-            style={styles.headerIcon} 
-          />
-          <View>
-            <Text style={styles.headerTitle}>Car Specialist AI</Text>
-            <Text style={styles.headerSubtitle}>Gemma 2B Engine</Text>
-          </View>
-        </View>
-        <View style={styles.offlineBadge}>
-          <View style={styles.greenDot} />
-          <Text style={styles.badgeText}>100% OFFLINE</Text>
-        </View>
-      </View>
-
-      {/* Messages List */}
-      <ScrollView 
-        style={styles.chatList} 
-        contentContainerStyle={styles.chatListContent}
-        keyboardShouldPersistTaps="handled"
-      >
-        {currentConvo.messages.length === 0 && !dualResponse && (
-          <View style={styles.emptyContainer}>
-            <View style={styles.emptyIconBg}>
-              <Text style={styles.emptyIcon}>🚗</Text>
+    <KeyboardAvoidingView 
+      style={styles.container} 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+    >
+      <View style={[styles.innerContainer, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+        
+        {/* Top Header */}
+        <View style={styles.header}>
+          <View style={styles.headerTitleGroup}>
+            <Image 
+              source={require('../../assets/icon.png')} 
+              style={styles.headerIcon} 
+            />
+            <View>
+              <Text style={styles.headerTitle}>Car Specialist AI</Text>
+              <Text style={styles.headerSubtitle}>Gemma 2B Engine</Text>
             </View>
-            <Text style={styles.emptyTitle}>Gemma 2B Offline Specialist</Text>
-            <Text style={styles.emptyText}>
-              Ask about vehicle diagnostics, OBD fault codes, engine specs, repair steps, or buying recommendations.
-            </Text>
           </View>
-        )}
-
-        {currentConvo.messages.map((msg) => (
-          <View 
-            key={msg.id} 
-            style={[styles.messageBubble, msg.role === 'user' ? styles.userBubble : styles.aiBubble]}
-          >
-            <Text style={[styles.roleLabel, msg.role === 'user' ? styles.userRole : styles.aiRole]}>
-              {msg.role === 'user' ? 'You' : 'Gemma 2B Specialist'}
-            </Text>
-            
-            {/* Horizontal Scroll wrapper for long text / tables */}
-            <ScrollView horizontal={false} showsVerticalScrollIndicator={false}>
-              <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
-                <Text style={[styles.messageText, msg.role === 'user' ? styles.userMessageText : styles.aiMessageText]}>
-                  {msg.content}
-                </Text>
-              </ScrollView>
-            </ScrollView>
+          <View style={styles.offlineBadge}>
+            <View style={styles.greenDot} />
+            <Text style={styles.badgeText}>100% OFFLINE</Text>
           </View>
-        ))}
+        </View>
 
-        {/* ChatGPT / Claude Style Horizontal Swipeable Dual Response Carousel */}
-        {dualResponse && (
-          <View style={styles.dualCardContainer}>
-            <View style={styles.dualHeaderRow}>
-              <View style={styles.dualTitleGroup}>
-                <Text style={styles.dualTitle}>Dual Responses</Text>
-                <Text style={styles.dualSubtitle}>Compare & Select Best Response</Text>
+        {/* Messages List */}
+        <ScrollView 
+          ref={scrollViewRef}
+          style={styles.chatList} 
+          contentContainerStyle={styles.chatListContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          {currentConvo.messages.length === 0 && !dualResponse && (
+            <View style={styles.emptyContainer}>
+              <View style={styles.emptyIconBg}>
+                <Text style={styles.emptyIcon}>🚗</Text>
               </View>
-              {isTyping && (
-                <TouchableOpacity activeOpacity={0.8} style={styles.stopBtn} onPress={stopGeneration}>
-                  <Text style={styles.stopText}>⏹ Stop</Text>
+              <Text style={styles.emptyTitle}>Gemma 2B Offline Specialist</Text>
+              <Text style={styles.emptyText}>
+                Ask about vehicle diagnostics, OBD fault codes, engine specs, repair steps, or buying recommendations.
+              </Text>
+            </View>
+          )}
+
+          {currentConvo.messages.map((msg) => (
+            <View 
+              key={msg.id} 
+              style={[
+                styles.messageBubble, 
+                msg.role === 'user' ? styles.userBubble : styles.aiBubble
+              ]}
+            >
+              <Text style={[styles.roleLabel, msg.role === 'user' ? styles.userRole : styles.aiRole]}>
+                {msg.role === 'user' ? 'You' : 'Gemma 2B Specialist'}
+              </Text>
+              <Text style={[styles.messageText, msg.role === 'user' ? styles.userMessageText : styles.aiMessageText]}>
+                {msg.content}
+              </Text>
+            </View>
+          ))}
+
+          {/* ChatGPT / Claude Style Horizontal Swipeable Dual Response Carousel */}
+          {dualResponse && (
+            <View style={styles.dualCardContainer}>
+              <View style={styles.dualHeaderRow}>
+                <View style={styles.dualTitleGroup}>
+                  <Text style={styles.dualTitle}>Dual AI Responses</Text>
+                  <Text style={styles.dualSubtitle}>Swipe left/right to compare</Text>
+                </View>
+                {isTyping && (
+                  <TouchableOpacity activeOpacity={0.8} style={styles.stopBtn} onPress={stopGeneration}>
+                    <Text style={styles.stopText}>⏹ Stop</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {/* Segmented Tab Buttons */}
+              <View style={styles.tabBar}>
+                <TouchableOpacity 
+                  activeOpacity={0.8}
+                  style={[styles.tabButton, activeTab === 0 && styles.activeTabButton]}
+                  onPress={() => handleTabPress(0)}
+                >
+                  <Text style={[styles.tabButtonText, activeTab === 0 && styles.activeTabText]}>
+                    ⚡ Response A (0.3)
+                  </Text>
                 </TouchableOpacity>
-              )}
-            </View>
 
-            {/* Segmented Tab Bar */}
-            <View style={styles.tabBar}>
-              <TouchableOpacity 
-                activeOpacity={0.8}
-                style={[styles.tabButton, activeTab === 'a' && styles.activeTabButton]}
-                onPress={() => setActiveTab('a')}
+                <TouchableOpacity 
+                  activeOpacity={0.8}
+                  style={[styles.tabButton, activeTab === 1 && styles.activeTabButton]}
+                  onPress={() => handleTabPress(1)}
+                >
+                  <Text style={[styles.tabButtonText, activeTab === 1 && styles.activeTabText]}>
+                    💡 Response B (0.6)
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Horizontal Swipeable Pager / Carousel */}
+              <ScrollView
+                ref={carouselRef}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                onScroll={handleScroll}
+                scrollEventThrottle={16}
+                style={styles.carouselScrollView}
               >
-                <Text style={[styles.tabButtonText, activeTab === 'a' && styles.activeTabText]}>
-                  ⚡ Response A (Precise 0.3)
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                activeOpacity={0.8}
-                style={[styles.tabButton, activeTab === 'b' && styles.activeTabButton]}
-                onPress={() => setActiveTab('b')}
-              >
-                <Text style={[styles.tabButtonText, activeTab === 'b' && styles.activeTabText]}>
-                  💡 Response B (Balanced 0.6)
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Carousel Slide Cards */}
-            <View style={styles.carouselWrapper}>
-              {activeTab === 'a' ? (
-                <View style={styles.slideCard}>
+                {/* Slide A */}
+                <View style={[styles.slideCard, { width: CAROUSEL_WIDTH - 28 }]}>
                   <View style={styles.slideHeader}>
                     <Text style={styles.slideTitle}>Response A — Factual Specs</Text>
                     <Text style={styles.slideBadge}>Temp 0.3</Text>
                   </View>
 
-                  <ScrollView style={styles.slideScroll} showsVerticalScrollIndicator={true}>
-                    <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
-                      <Text style={styles.slideText}>
-                        {dualResponse.response_a.content || (isTyping ? 'Generating precise response...' : 'No response generated.')}
-                      </Text>
-                    </ScrollView>
+                  <ScrollView 
+                    style={styles.slideScroll} 
+                    nestedScrollEnabled
+                    showsVerticalScrollIndicator={true}
+                  >
+                    <Text style={styles.slideText}>
+                      {dualResponse.response_a.content || (isTyping ? 'Generating precise factual response...' : 'No response generated.')}
+                    </Text>
                   </ScrollView>
 
                   {dualResponse.streaming_complete && (
@@ -140,19 +199,22 @@ export default function ChatScreen() {
                     </TouchableOpacity>
                   )}
                 </View>
-              ) : (
-                <View style={styles.slideCard}>
+
+                {/* Slide B */}
+                <View style={[styles.slideCard, { width: CAROUSEL_WIDTH - 28 }]}>
                   <View style={styles.slideHeader}>
                     <Text style={styles.slideTitle}>Response B — Balanced Advice</Text>
                     <Text style={styles.slideBadge}>Temp 0.6</Text>
                   </View>
 
-                  <ScrollView style={styles.slideScroll} showsVerticalScrollIndicator={true}>
-                    <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
-                      <Text style={styles.slideText}>
-                        {dualResponse.response_b.content || (isTyping ? 'Generating balanced response...' : 'No response generated.')}
-                      </Text>
-                    </ScrollView>
+                  <ScrollView 
+                    style={styles.slideScroll} 
+                    nestedScrollEnabled
+                    showsVerticalScrollIndicator={true}
+                  >
+                    <Text style={styles.slideText}>
+                      {dualResponse.response_b.content || (isTyping ? 'Generating balanced advice response...' : 'No response generated.')}
+                    </Text>
                   </ScrollView>
 
                   {dualResponse.streaming_complete && (
@@ -161,38 +223,42 @@ export default function ChatScreen() {
                     </TouchableOpacity>
                   )}
                 </View>
-              )}
-            </View>
+              </ScrollView>
 
-            {/* Page Indicator Dots */}
-            <View style={styles.paginationDots}>
-              <View style={[styles.dot, activeTab === 'a' && styles.activeDot]} />
-              <View style={[styles.dot, activeTab === 'b' && styles.activeDot]} />
+              {/* Page Indicator Dots */}
+              <View style={styles.paginationDots}>
+                <View style={[styles.dot, activeTab === 0 && styles.activeDot]} />
+                <View style={[styles.dot, activeTab === 1 && styles.activeDot]} />
+              </View>
             </View>
-          </View>
-        )}
-      </ScrollView>
+          )}
+        </ScrollView>
 
-      {/* Input Bar Pinned above Safe Bottom Inset */}
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.textInput}
-          placeholder="Ask Gemma 2B about cars..."
-          placeholderTextColor="#71706B"
-          value={input}
-          onChangeText={setInput}
-          multiline
-        />
-        <TouchableOpacity 
-          activeOpacity={0.8} 
-          style={[styles.sendBtn, (!input.trim() || isTyping) && styles.disabledSendBtn]} 
-          onPress={handleSend} 
-          disabled={!input.trim() || isTyping}
-        >
-          <Text style={styles.sendIcon}>➔</Text>
-        </TouchableOpacity>
+        {/* Input Bar shiftable with Keyboard */}
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={[styles.textInput, { height: Math.min(100, Math.max(44, inputHeight)) }]}
+            placeholder="Ask Gemma 2B about cars..."
+            placeholderTextColor="#71706B"
+            value={input}
+            onChangeText={setInput}
+            onContentSizeChange={(e) => {
+              setInputHeight(e.nativeEvent.contentSize.height);
+            }}
+            multiline
+          />
+          <TouchableOpacity 
+            activeOpacity={0.8} 
+            style={[styles.sendBtn, (!input.trim() || isTyping) && styles.disabledSendBtn]} 
+            onPress={handleSend} 
+            disabled={!input.trim() || isTyping}
+          >
+            <Text style={styles.sendIcon}>➔</Text>
+          </TouchableOpacity>
+        </View>
+
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -200,6 +266,9 @@ const styles = StyleSheet.create({
   container: { 
     flex: 1, 
     backgroundColor: '#141413' // Claude warm charcoal
+  },
+  innerContainer: {
+    flex: 1,
   },
   header: {
     paddingHorizontal: 18,
@@ -294,9 +363,10 @@ const styles = StyleSheet.create({
   },
   messageBubble: { 
     borderRadius: 18, 
-    padding: 15, 
-    marginBottom: 12, 
-    maxWidth: '88%' 
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginBottom: 14, 
+    maxWidth: '85%'
   },
   userBubble: { 
     backgroundColor: '#DA7756', // Claude terracotta accent
@@ -393,7 +463,7 @@ const styles = StyleSheet.create({
     color: '#DA7756',
     fontWeight: '700',
   },
-  carouselWrapper: {
+  carouselScrollView: {
     width: '100%',
   },
   slideCard: { 
@@ -403,7 +473,8 @@ const styles = StyleSheet.create({
     minHeight: 220, 
     borderColor: '#2E2C28',
     borderWidth: 1,
-    justifyContent: 'space-between' 
+    justifyContent: 'space-between',
+    marginRight: 10,
   },
   slideHeader: {
     flexDirection: 'row',
@@ -455,7 +526,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 6,
-    marginTop: 10,
+    marginTop: 12,
   },
   dot: {
     width: 6,
@@ -485,7 +556,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18, 
     paddingVertical: 10, 
     fontSize: 14, 
-    maxHeight: 100,
     borderColor: '#383632',
     borderWidth: 1,
   },
