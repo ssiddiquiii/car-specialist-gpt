@@ -1,9 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, SafeAreaView, Image } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Image, Dimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMobileChatStore } from '../store/mobileChatStore';
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
 export default function ChatScreen() {
+  const insets = useSafeAreaInsets();
   const [input, setInput] = useState('');
+  const [activeTab, setActiveTab] = useState('a'); // 'a' or 'b'
   const { conversations, activeConversationId, sendMessage, isTyping, dualResponse, stopGeneration, chooseResponse } = useMobileChatStore();
 
   const currentConvo = conversations.find(c => c.id === activeConversationId) || { messages: [] };
@@ -12,19 +17,23 @@ export default function ChatScreen() {
     if (!input.trim() || isTyping) return;
     const text = input;
     setInput('');
+    setActiveTab('a'); // Reset tab to A when sending new prompt
     sendMessage(text);
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+      {/* Top Header */}
       <View style={styles.header}>
         <View style={styles.headerTitleGroup}>
           <Image 
             source={require('../../assets/icon.png')} 
             style={styles.headerIcon} 
           />
-          <Text style={styles.headerTitle}>Car Specialist AI</Text>
+          <View>
+            <Text style={styles.headerTitle}>Car Specialist AI</Text>
+            <Text style={styles.headerSubtitle}>Gemma 2B Engine</Text>
+          </View>
         </View>
         <View style={styles.offlineBadge}>
           <View style={styles.greenDot} />
@@ -33,12 +42,19 @@ export default function ChatScreen() {
       </View>
 
       {/* Messages List */}
-      <ScrollView style={styles.chatList} contentContainerStyle={{ paddingVertical: 16 }}>
+      <ScrollView 
+        style={styles.chatList} 
+        contentContainerStyle={styles.chatListContent}
+        keyboardShouldPersistTaps="handled"
+      >
         {currentConvo.messages.length === 0 && !dualResponse && (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyTitle}>Gemma 2B Engine Ready 🚗</Text>
+            <View style={styles.emptyIconBg}>
+              <Text style={styles.emptyIcon}>🚗</Text>
+            </View>
+            <Text style={styles.emptyTitle}>Gemma 2B Offline Specialist</Text>
             <Text style={styles.emptyText}>
-              Ask any question about car diagnostics, engine performance, maintenance, or vehicle recommendations.
+              Ask about vehicle diagnostics, OBD fault codes, engine specs, repair steps, or buying recommendations.
             </Text>
           </View>
         )}
@@ -51,17 +67,26 @@ export default function ChatScreen() {
             <Text style={[styles.roleLabel, msg.role === 'user' ? styles.userRole : styles.aiRole]}>
               {msg.role === 'user' ? 'You' : 'Gemma 2B Specialist'}
             </Text>
-            <Text style={[styles.messageText, msg.role === 'user' ? styles.userMessageText : styles.aiMessageText]}>
-              {msg.content}
-            </Text>
+            
+            {/* Horizontal Scroll wrapper for long text / tables */}
+            <ScrollView horizontal={false} showsVerticalScrollIndicator={false}>
+              <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
+                <Text style={[styles.messageText, msg.role === 'user' ? styles.userMessageText : styles.aiMessageText]}>
+                  {msg.content}
+                </Text>
+              </ScrollView>
+            </ScrollView>
           </View>
         ))}
 
-        {/* Dual Response Cards */}
+        {/* ChatGPT / Claude Style Horizontal Swipeable Dual Response Carousel */}
         {dualResponse && (
           <View style={styles.dualCardContainer}>
-            <View style={styles.dualHeader}>
-              <Text style={styles.dualTitle}>Dual Responses (On-Device Gemma 2B)</Text>
+            <View style={styles.dualHeaderRow}>
+              <View style={styles.dualTitleGroup}>
+                <Text style={styles.dualTitle}>Dual Responses</Text>
+                <Text style={styles.dualSubtitle}>Compare & Select Best Response</Text>
+              </View>
               {isTyping && (
                 <TouchableOpacity activeOpacity={0.8} style={styles.stopBtn} onPress={stopGeneration}>
                   <Text style={styles.stopText}>⏹ Stop</Text>
@@ -69,48 +94,90 @@ export default function ChatScreen() {
               )}
             </View>
 
-            <View style={styles.dualCardsRow}>
-              {/* Card A */}
-              <View style={styles.singleCard}>
-                <View style={styles.cardHeaderRow}>
-                  <Text style={styles.cardLabel}>Response A</Text>
-                  <Text style={styles.tempBadge}>Temp 0.7 Factual</Text>
-                </View>
-                <ScrollView style={styles.cardScroll}>
-                  <Text style={styles.cardText}>{dualResponse.response_a.content || 'Generating Response A...'}</Text>
-                </ScrollView>
-                {dualResponse.streaming_complete && (
-                  <TouchableOpacity activeOpacity={0.8} style={styles.chooseBtn} onPress={() => chooseResponse('a')}>
-                    <Text style={styles.chooseBtnText}>Select Response A</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
+            {/* Segmented Tab Bar */}
+            <View style={styles.tabBar}>
+              <TouchableOpacity 
+                activeOpacity={0.8}
+                style={[styles.tabButton, activeTab === 'a' && styles.activeTabButton]}
+                onPress={() => setActiveTab('a')}
+              >
+                <Text style={[styles.tabButtonText, activeTab === 'a' && styles.activeTabText]}>
+                  ⚡ Response A (Precise 0.3)
+                </Text>
+              </TouchableOpacity>
 
-              {/* Card B */}
-              <View style={styles.singleCard}>
-                <View style={styles.cardHeaderRow}>
-                  <Text style={styles.cardLabel}>Response B</Text>
-                  <Text style={styles.tempBadge}>Temp 0.95 Creative</Text>
+              <TouchableOpacity 
+                activeOpacity={0.8}
+                style={[styles.tabButton, activeTab === 'b' && styles.activeTabButton]}
+                onPress={() => setActiveTab('b')}
+              >
+                <Text style={[styles.tabButtonText, activeTab === 'b' && styles.activeTabText]}>
+                  💡 Response B (Balanced 0.6)
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Carousel Slide Cards */}
+            <View style={styles.carouselWrapper}>
+              {activeTab === 'a' ? (
+                <View style={styles.slideCard}>
+                  <View style={styles.slideHeader}>
+                    <Text style={styles.slideTitle}>Response A — Factual Specs</Text>
+                    <Text style={styles.slideBadge}>Temp 0.3</Text>
+                  </View>
+
+                  <ScrollView style={styles.slideScroll} showsVerticalScrollIndicator={true}>
+                    <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
+                      <Text style={styles.slideText}>
+                        {dualResponse.response_a.content || (isTyping ? 'Generating precise response...' : 'No response generated.')}
+                      </Text>
+                    </ScrollView>
+                  </ScrollView>
+
+                  {dualResponse.streaming_complete && (
+                    <TouchableOpacity activeOpacity={0.8} style={styles.chooseBtn} onPress={() => chooseResponse('a')}>
+                      <Text style={styles.chooseBtnText}>✓ Select Response A</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
-                <ScrollView style={styles.cardScroll}>
-                  <Text style={styles.cardText}>{dualResponse.response_b.content || 'Generating Response B...'}</Text>
-                </ScrollView>
-                {dualResponse.streaming_complete && (
-                  <TouchableOpacity activeOpacity={0.8} style={styles.chooseBtn} onPress={() => chooseResponse('b')}>
-                    <Text style={styles.chooseBtnText}>Select Response B</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
+              ) : (
+                <View style={styles.slideCard}>
+                  <View style={styles.slideHeader}>
+                    <Text style={styles.slideTitle}>Response B — Balanced Advice</Text>
+                    <Text style={styles.slideBadge}>Temp 0.6</Text>
+                  </View>
+
+                  <ScrollView style={styles.slideScroll} showsVerticalScrollIndicator={true}>
+                    <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
+                      <Text style={styles.slideText}>
+                        {dualResponse.response_b.content || (isTyping ? 'Generating balanced response...' : 'No response generated.')}
+                      </Text>
+                    </ScrollView>
+                  </ScrollView>
+
+                  {dualResponse.streaming_complete && (
+                    <TouchableOpacity activeOpacity={0.8} style={styles.chooseBtn} onPress={() => chooseResponse('b')}>
+                      <Text style={styles.chooseBtnText}>✓ Select Response B</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+            </View>
+
+            {/* Page Indicator Dots */}
+            <View style={styles.paginationDots}>
+              <View style={[styles.dot, activeTab === 'a' && styles.activeDot]} />
+              <View style={[styles.dot, activeTab === 'b' && styles.activeDot]} />
             </View>
           </View>
         )}
       </ScrollView>
 
-      {/* Input Bar */}
+      {/* Input Bar Pinned above Safe Bottom Inset */}
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.textInput}
-          placeholder="Ask anything about cars..."
+          placeholder="Ask Gemma 2B about cars..."
           placeholderTextColor="#71706B"
           value={input}
           onChangeText={setInput}
@@ -125,7 +192,7 @@ export default function ChatScreen() {
           <Text style={styles.sendIcon}>➔</Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -135,8 +202,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#141413' // Claude warm charcoal
   },
   header: {
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
     backgroundColor: '#1C1C1A',
     borderBottomWidth: 1,
     borderColor: '#2E2C28',
@@ -150,15 +217,19 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   headerIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
   },
   headerTitle: { 
-    fontSize: 17, 
+    fontSize: 16, 
     fontWeight: '700', 
     color: '#ECECEC',
     letterSpacing: -0.2,
+  },
+  headerSubtitle: {
+    fontSize: 11,
+    color: '#9F9D96',
   },
   offlineBadge: { 
     flexDirection: 'row',
@@ -184,7 +255,10 @@ const styles = StyleSheet.create({
   },
   chatList: { 
     flex: 1, 
-    paddingHorizontal: 16 
+  },
+  chatListContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
   emptyContainer: {
     alignItems: 'center',
@@ -192,11 +266,25 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
     paddingHorizontal: 20,
   },
+  emptyIconBg: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    backgroundColor: '#1F1E1B',
+    borderColor: '#383632',
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  emptyIcon: {
+    fontSize: 30,
+  },
   emptyTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
     color: '#ECECEC',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   emptyText: {
     fontSize: 13,
@@ -208,10 +296,10 @@ const styles = StyleSheet.create({
     borderRadius: 18, 
     padding: 15, 
     marginBottom: 12, 
-    maxWidth: '85%' 
+    maxWidth: '88%' 
   },
   userBubble: { 
-    backgroundColor: '#DA7756', // Claude terracotta
+    backgroundColor: '#DA7756', // Claude terracotta accent
     alignSelf: 'flex-end' 
   },
   aiBubble: { 
@@ -243,22 +331,27 @@ const styles = StyleSheet.create({
   },
   dualCardContainer: { 
     backgroundColor: '#1C1C1A', 
-    borderRadius: 18, 
+    borderRadius: 20, 
     padding: 14, 
-    marginVertical: 12, 
+    marginVertical: 14, 
     borderColor: '#383632', 
     borderWidth: 1 
   },
-  dualHeader: { 
+  dualHeaderRow: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     alignItems: 'center', 
     marginBottom: 12 
   },
+  dualTitleGroup: {},
   dualTitle: { 
-    fontSize: 13, 
+    fontSize: 14, 
     fontWeight: '700', 
     color: '#ECECEC' 
+  },
+  dualSubtitle: {
+    fontSize: 11,
+    color: '#9F9D96',
   },
   stopBtn: { 
     backgroundColor: '#991B1B', 
@@ -271,57 +364,113 @@ const styles = StyleSheet.create({
     fontSize: 11, 
     fontWeight: '700' 
   },
-  dualCardsRow: { 
-    flexDirection: 'row', 
-    gap: 10 
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: '#141413',
+    borderRadius: 12,
+    padding: 3,
+    marginBottom: 12,
+    borderColor: '#2E2C28',
+    borderWidth: 1,
   },
-  singleCard: { 
-    flex: 1, 
+  tabButton: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+    borderRadius: 10,
+  },
+  activeTabButton: {
+    backgroundColor: '#27272A',
+    borderColor: '#383632',
+    borderWidth: 1,
+  },
+  tabButtonText: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: '#9F9D96',
+  },
+  activeTabText: {
+    color: '#DA7756',
+    fontWeight: '700',
+  },
+  carouselWrapper: {
+    width: '100%',
+  },
+  slideCard: { 
     backgroundColor: '#141413', 
     borderRadius: 14, 
-    padding: 12, 
-    minHeight: 200, 
+    padding: 14, 
+    minHeight: 220, 
     borderColor: '#2E2C28',
     borderWidth: 1,
     justifyContent: 'space-between' 
   },
-  cardHeaderRow: {
-    marginBottom: 8,
+  slideHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
   },
-  cardLabel: { 
-    fontSize: 12, 
+  slideTitle: { 
+    fontSize: 13, 
     fontWeight: '700', 
-    color: '#ECECEC', 
-    marginBottom: 2 
+    color: '#ECECEC' 
   },
-  tempBadge: {
+  slideBadge: {
     fontSize: 10,
-    color: '#9F9D96',
+    fontWeight: '700',
+    color: '#DA7756',
+    backgroundColor: 'rgba(218, 119, 86, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
-  cardScroll: { 
+  slideScroll: { 
     flex: 1, 
-    maxHeight: 180 
+    maxHeight: 240 
   },
-  cardText: { 
-    fontSize: 12.5, 
+  slideText: { 
+    fontSize: 13, 
     color: '#D1CFCA', 
-    lineHeight: 18 
+    lineHeight: 19 
   },
   chooseBtn: { 
     backgroundColor: '#DA7756', 
-    borderRadius: 10, 
-    paddingVertical: 9, 
-    marginTop: 10, 
-    alignItems: 'center' 
+    borderRadius: 12, 
+    paddingVertical: 11, 
+    marginTop: 12, 
+    alignItems: 'center',
+    shadowColor: '#DA7756',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   chooseBtnText: { 
     color: '#FFFFFF', 
-    fontSize: 12, 
+    fontSize: 13, 
     fontWeight: '700' 
+  },
+  paginationDots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 10,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#383632',
+  },
+  activeDot: {
+    width: 18,
+    backgroundColor: '#DA7756',
   },
   inputContainer: { 
     flexDirection: 'row', 
-    padding: 12, 
+    paddingHorizontal: 14, 
+    paddingVertical: 10, 
     backgroundColor: '#1C1C1A', 
     borderTopWidth: 1, 
     borderColor: '#2E2C28', 

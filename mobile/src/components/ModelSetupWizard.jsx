@@ -1,79 +1,86 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Image, ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMobileChatStore } from '../store/mobileChatStore';
 import { MODEL_CONFIG } from '../services/llamaService';
 
 export default function ModelSetupWizard() {
+  const insets = useSafeAreaInsets();
   const { isDownloading, downloadProgress, startModelDownload, downloadError } = useMobileChatStore();
 
   return (
-    <View style={styles.container}>
-      <View style={styles.card}>
-        {/* Realistic App Icon */}
-        <View style={styles.iconWrapper}>
-          <Image 
-            source={require('../../assets/icon.png')} 
-            style={styles.appIcon} 
-            resizeMode="cover"
-          />
-        </View>
-
-        <Text style={styles.title}>Car Specialist AI Setup</Text>
-        <Text style={styles.subtitle}>
-          On-device automotive intelligence powered by Google Gemma 2B. Runs 100% offline with zero server dependencies.
-        </Text>
-
-        {downloadError && (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorTitle}>⚠️ Setup Notice</Text>
-            <Text style={styles.errorText}>{downloadError}</Text>
+    <View style={[styles.container, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 }]}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent} 
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.card}>
+          {/* Realistic App Icon */}
+          <View style={styles.iconWrapper}>
+            <Image 
+              source={require('../../assets/icon.png')} 
+              style={styles.appIcon} 
+              resizeMode="cover"
+            />
           </View>
-        )}
 
-        {!isDownloading ? (
-          <View style={styles.singleOptionContainer}>
-            <View style={styles.modelDetailCard}>
-              <View style={styles.modelHeader}>
-                <Text style={styles.modelName}>{MODEL_CONFIG.name}</Text>
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>Gemma 2</Text>
+          <Text style={styles.title}>Car Specialist AI Setup</Text>
+          <Text style={styles.subtitle}>
+            On-device automotive intelligence powered by Google Gemma 2B. Runs 100% offline with zero server dependencies.
+          </Text>
+
+          {downloadError && (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorTitle}>⚠️ Setup Notice</Text>
+              <Text style={styles.errorText}>{downloadError}</Text>
+            </View>
+          )}
+
+          {!isDownloading ? (
+            <View style={styles.singleOptionContainer}>
+              <View style={styles.modelDetailCard}>
+                <View style={styles.modelHeader}>
+                  <Text style={styles.modelName}>{MODEL_CONFIG.name}</Text>
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>Gemma 2</Text>
+                  </View>
                 </View>
+                <Text style={styles.modelDesc}>
+                  Official 4-bit quantized GGUF weights (~1.68 GB). Optimized for fast ARM CPU/GPU inference.
+                </Text>
               </View>
-              <Text style={styles.modelDesc}>
-                Official 4-bit quantized GGUF weights (~1.68 GB). Optimized for fast ARM CPU/GPU inference.
+
+              <TouchableOpacity 
+                activeOpacity={0.8}
+                style={styles.downloadBtn}
+                onPress={() => startModelDownload()}
+              >
+                <Text style={styles.downloadBtnText}>Download Gemma 2 (1.68 GB)</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.progressBox}>
+              <ActivityIndicator size="large" color="#DA7756" />
+              <Text style={styles.progressTitle}>Downloading Gemma 2B Model...</Text>
+              <Text style={styles.progressPercent}>{downloadProgress.progressPercent}%</Text>
+
+              <View style={styles.progressBarBg}>
+                <View style={[styles.progressBarFill, { width: `${downloadProgress.progressPercent}%` }]} />
+              </View>
+
+              <Text style={styles.progressDetails}>
+                {downloadProgress.writtenMB} MB / {downloadProgress.totalMB} MB
               </Text>
+              
+              <View style={styles.infoBadgeContainer}>
+                <Text style={styles.notice}>
+                  ⚡ Background download supported. You can switch apps or use your phone while downloading.
+                </Text>
+              </View>
             </View>
-
-            <TouchableOpacity 
-              activeOpacity={0.8}
-              style={styles.downloadBtn}
-              onPress={() => startModelDownload()}
-            >
-              <Text style={styles.downloadBtnText}>Download Gemma 2 (1.68 GB)</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={styles.progressBox}>
-            <ActivityIndicator size="large" color="#DA7756" />
-            <Text style={styles.progressTitle}>Downloading Gemma 2B Model...</Text>
-            <Text style={styles.progressPercent}>{downloadProgress.progressPercent}%</Text>
-
-            <View style={styles.progressBarBg}>
-              <View style={[styles.progressBarFill, { width: `${downloadProgress.progressPercent}%` }]} />
-            </View>
-
-            <Text style={styles.progressDetails}>
-              {downloadProgress.writtenMB} MB / {downloadProgress.totalMB} MB
-            </Text>
-            
-            <View style={styles.infoBadgeContainer}>
-              <Text style={styles.notice}>
-                ⚡ Background download supported. You can switch apps or use your phone while downloading.
-              </Text>
-            </View>
-          </View>
-        )}
-      </View>
+          )}
+        </View>
+      </ScrollView>
     </View>
   );
 }
@@ -82,9 +89,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#141413', // Warm Claude Charcoal
+  },
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    paddingHorizontal: 20,
   },
   card: {
     backgroundColor: '#1F1E1B', // Claude warm card background

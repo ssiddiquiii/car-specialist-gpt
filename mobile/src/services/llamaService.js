@@ -163,7 +163,7 @@ class LlamaService {
     }
   }
 
-  /** Generate Dual Streaming Responses (Response A: Temp 0.7, Response B: Temp 0.95) */
+  /** Generate Dual Streaming Responses (Response A: Temp 0.3 Precise, Response B: Temp 0.6 Balanced) */
   async generateDualResponse(messages, onChunkA, onChunkB) {
     if (!this.context || !this.isInitialized) {
       throw new Error("Gemma 2B model is not initialized yet");
@@ -171,13 +171,13 @@ class LlamaService {
 
     const formattedPrompt = messages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n') + '\nASSISTANT:';
 
-    // 1. Generate Response A (Temperature 0.7 - Factual)
-    console.log("[LlamaService] Streaming Response A (Temp 0.7)...");
+    // 1. Generate Response A (Temperature 0.3 - Precise & Factual)
+    console.log("[LlamaService] Streaming Response A (Temp 0.3 Precise)...");
     await this.context.completion(
       {
         prompt: formattedPrompt,
         n_predict: 512,
-        temperature: 0.7,
+        temperature: 0.3,
         stop: ["USER:", "\n\nUSER:", "<eos>"],
       },
       (data) => {
@@ -185,13 +185,13 @@ class LlamaService {
       }
     );
 
-    // 2. Generate Response B (Temperature 0.95 - Creative)
-    console.log("[LlamaService] Streaming Response B (Temp 0.95)...");
+    // 2. Generate Response B (Temperature 0.6 - Balanced Advice)
+    console.log("[LlamaService] Streaming Response B (Temp 0.6 Balanced)...");
     await this.context.completion(
       {
         prompt: formattedPrompt,
         n_predict: 512,
-        temperature: 0.95,
+        temperature: 0.6,
         stop: ["USER:", "\n\nUSER:", "<eos>"],
       },
       (data) => {

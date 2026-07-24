@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View, ActivityIndicator, Text } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useMobileChatStore } from './src/store/mobileChatStore';
 import ModelSetupWizard from './src/components/ModelSetupWizard';
 import ChatScreen from './src/components/ChatScreen';
@@ -14,19 +15,23 @@ export default function App() {
 
   if (isCheckingModel) {
     return (
-      <View style={styles.loadingContainer}>
-        <StatusBar style="light" />
-        <ActivityIndicator size="large" color="#DA7756" />
-        <Text style={styles.loadingText}>Initializing Gemma 2B Engine...</Text>
-      </View>
+      <SafeAreaProvider>
+        <View style={styles.loadingContainer}>
+          <StatusBar style="light" />
+          <ActivityIndicator size="large" color="#DA7756" />
+          <Text style={styles.loadingText}>Initializing Gemma 2B Engine...</Text>
+        </View>
+      </SafeAreaProvider>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar style="light" />
-      {!isModelReady ? <ModelSetupWizard /> : <ChatScreen />}
-    </View>
+    <SafeAreaProvider>
+      <View style={styles.container}>
+        <StatusBar style="light" translucent backgroundColor="transparent" />
+        {!isModelReady ? <ModelSetupWizard /> : <ChatScreen />}
+      </View>
+    </SafeAreaProvider>
   );
 }
 
