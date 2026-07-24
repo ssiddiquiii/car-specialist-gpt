@@ -11,6 +11,7 @@
     "llama.rn": "^0.12.6",
     "react": "19.2.3",
     "react-native": "0.86.0",
+    "react-native-markdown-display": "^7.0.2",
     "react-native-safe-area-context": "~5.7.0",
     "zustand": "^5.0.14"
   },

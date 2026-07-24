@@ -2,6 +2,9 @@ import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LlamaService, { MODEL_CONFIG } from '../services/llamaService';
 
+const CHATS_STORAGE_KEY = '@car_specialist_chats_v2';
+const USER_STORAGE_KEY = '@car_specialist_user_v2';
+
 export const useMobileChatStore = create((set, get) => ({
   // Model & Setup State
   isCheckingModel: true,
@@ -10,19 +13,52 @@ export const useMobileChatStore = create((set, get) => ({
   downloadError: null,
   downloadProgress: { progressPercent: 0, writtenMB: '0', totalMB: '0' },
 
+  // Navigation & Drawer State
+  isSidebarOpen: false,
+  isAuthModalOpen: false,
+
+  // Auth State
+  user: null, // { name: string, email: string } or null
+
   // Chat State
   conversations: [],
   activeConversationId: null,
   isTyping: false,
   dualResponse: null,
 
-  // Actions
+  // Initialize Store Data
   checkModelStatus: async () => {
     set({ isCheckingModel: true, downloadError: null });
+
+    // Load saved User profile
+    try {
+      const savedUserJson = await AsyncStorage.getItem(USER_STORAGE_KEY);
+      if (savedUserJson) {
+        set({ user: JSON.parse(savedUserJson) });
+      }
+    } catch (e) {
+      console.error("Failed to load user profile:", e);
+    }
+
+    // Load saved Chat History
+    try {
+      const savedChatsJson = await AsyncStorage.getItem(CHATS_STORAGE_KEY);
+      if (savedChatsJson) {
+        const savedConvos = JSON.parse(savedChatsJson);
+        set({ conversations: savedConvos });
+        if (savedConvos.length > 0) {
+          set({ activeConversationId: savedConvos[0].id });
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load chat history:", e);
+    }
+
+    // Check offline GGUF model file status
     try {
       const isDownloaded = await LlamaService.isModelDownloaded();
       if (isDownloaded) {
-        console.log("[MobileChatStore] Model file found on disk. Initializing Llama Engine...");
+        console.log("[MobileChatStore] Model file found. Initializing Llama Engine...");
         await LlamaService.initModel();
         set({ isModelReady: true, isCheckingModel: false });
       } else {
@@ -34,31 +70,98 @@ export const useMobileChatStore = create((set, get) => ({
       set({ 
         isModelReady: false, 
         isCheckingModel: false, 
-        downloadError: e.message || "Failed to initialize Gemma 2B engine. Please ensure device has enough RAM." 
+        downloadError: e.message || "Failed to initialize AI engine. Please ensure device has enough RAM." 
       });
     }
   },
 
+  // Save Conversations Helper
+  saveConversationsToStorage: async (convos) => {
+    try {
+      await AsyncStorage.setItem(CHATS_STORAGE_KEY, JSON.stringify(convos));
+    } catch (e) {
+      console.error("Failed to save conversations:", e);
+    }
+  },
+
+  // Auth Actions
+  loginUser: async (email, password, name = "Car Enthusiast") => {
+    const userProfile = { name: name || email.split('@')[0], email };
+    set({ user: userProfile, isAuthModalOpen: false });
+    try {
+      await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userProfile));
+    } catch (e) {
+      console.error("Failed to save user session:", e);
+    }
+  },
+
+  logoutUser: async () => {
+    set({ user: null });
+    try {
+      await AsyncStorage.removeItem(USER_STORAGE_KEY);
+    } catch (e) {
+      console.error("Failed to clear user session:", e);
+    }
+  },
+
+  toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
+  closeSidebar: () => set({ isSidebarOpen: false }),
+  toggleAuthModal: () => set((state) => ({ isAuthModalOpen: !state.isAuthModalOpen })),
+
+  // Sidebar Chat Navigation Actions
+  startNewChat: () => {
+    const newId = `conv_${Date.now()}`;
+    set({
+      activeConversationId: newId,
+      dualResponse: null,
+      isSidebarOpen: false
+    });
+  },
+
+  selectConversation: (id) => {
+    set({
+      activeConversationId: id,
+      dualResponse: null,
+      isSidebarOpen: false
+    });
+  },
+
+  deleteConversation: (id) => {
+    set((state) => {
+      const updated = state.conversations.filter(c => c.id !== id);
+      const nextActiveId = state.activeConversationId === id 
+        ? (updated.length > 0 ? updated[0].id : null) 
+        : state.activeConversationId;
+
+      get().saveConversationsToStorage(updated);
+      return {
+        conversations: updated,
+        activeConversationId: nextActiveId,
+        dualResponse: state.activeConversationId === id ? null : state.dualResponse
+      };
+    });
+  },
+
+  // Model Download
   startModelDownload: async () => {
     set({ isDownloading: true, downloadError: null });
     try {
-      console.log("[MobileChatStore] Starting download for Gemma 2B model...");
       await LlamaService.downloadModel((progress) => {
         set({ downloadProgress: progress });
       });
 
-      console.log("[MobileChatStore] Download finished. Initializing model context...");
       await LlamaService.initModel();
       set({ isDownloading: false, isModelReady: true });
     } catch (e) {
       console.error("[MobileChatStore] Download or init failed:", e);
       set({ 
         isDownloading: false, 
-        downloadError: e.message || "Download or model initialization failed. Please check internet connection and try again." 
+        downloadError: e.message || "Download failed. Please check internet connection and try again." 
       });
     }
   },
 
+  // Message Sending & Dual Response
   sendMessage: async (content) => {
     if (!content.trim()) return;
 
@@ -79,8 +182,10 @@ export const useMobileChatStore = create((set, get) => ({
           messages: [...(updatedConvos[existingConvIndex].messages || []), userMsg]
         };
       } else {
-        updatedConvos.push({ id: convId, title: content.slice(0, 30), messages: [userMsg] });
+        updatedConvos.unshift({ id: convId, title: content.slice(0, 32), messages: [userMsg] });
       }
+
+      get().saveConversationsToStorage(updatedConvos);
 
       return {
         isTyping: true,
@@ -153,17 +258,21 @@ export const useMobileChatStore = create((set, get) => ({
   },
 
   chooseResponse: (chosenKey) => {
-    const { dualResponse, activeConversationId } = get();
+    const { dualResponse, activeConversationId, conversations } = get();
     if (!dualResponse) return;
 
     const chosenContent = chosenKey === 'a' ? dualResponse.response_a.content : dualResponse.response_b.content;
     const aiMsg = { id: `ai_${Date.now()}`, role: 'assistant', content: chosenContent, timestamp: new Date().toISOString() };
 
-    set((state) => ({
+    const updatedConvos = conversations.map((c) =>
+      c.id === activeConversationId ? { ...c, messages: [...(c.messages || []), aiMsg] } : c
+    );
+
+    get().saveConversationsToStorage(updatedConvos);
+
+    set({
       dualResponse: null,
-      conversations: state.conversations.map((c) =>
-        c.id === activeConversationId ? { ...c, messages: [...(c.messages || []), aiMsg] } : c
-      )
-    }));
+      conversations: updatedConvos
+    });
   }
 }));

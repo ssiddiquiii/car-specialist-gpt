@@ -2,7 +2,6 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Image, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMobileChatStore } from '../store/mobileChatStore';
-import { MODEL_CONFIG } from '../services/llamaService';
 
 export default function ModelSetupWizard() {
   const insets = useSafeAreaInsets();
@@ -26,7 +25,7 @@ export default function ModelSetupWizard() {
 
           <Text style={styles.title}>Car Specialist AI Setup</Text>
           <Text style={styles.subtitle}>
-            On-device automotive intelligence powered by Google Gemma 2B. Runs 100% offline with zero server dependencies.
+            Your personal automotive assistant. Works 100% offline on your phone without internet.
           </Text>
 
           {downloadError && (
@@ -40,13 +39,13 @@ export default function ModelSetupWizard() {
             <View style={styles.singleOptionContainer}>
               <View style={styles.modelDetailCard}>
                 <View style={styles.modelHeader}>
-                  <Text style={styles.modelName}>{MODEL_CONFIG.name}</Text>
+                  <Text style={styles.modelName}>Offline AI Engine</Text>
                   <View style={styles.badge}>
-                    <Text style={styles.badgeText}>Gemma 2</Text>
+                    <Text style={styles.badgeText}>1.68 GB</Text>
                   </View>
                 </View>
                 <Text style={styles.modelDesc}>
-                  Official 4-bit quantized GGUF weights (~1.68 GB). Optimized for fast ARM CPU/GPU inference.
+                  Downloads once onto your device so you can diagnose car issues and get advice anywhere without Wi-Fi.
                 </Text>
               </View>
 
@@ -55,13 +54,13 @@ export default function ModelSetupWizard() {
                 style={styles.downloadBtn}
                 onPress={() => startModelDownload()}
               >
-                <Text style={styles.downloadBtnText}>Download Gemma 2 (1.68 GB)</Text>
+                <Text style={styles.downloadBtnText}>Download AI Engine (1.68 GB)</Text>
               </TouchableOpacity>
             </View>
           ) : (
             <View style={styles.progressBox}>
               <ActivityIndicator size="large" color="#DA7756" />
-              <Text style={styles.progressTitle}>Downloading Gemma 2B Model...</Text>
+              <Text style={styles.progressTitle}>Downloading AI Engine...</Text>
               <Text style={styles.progressPercent}>{downloadProgress.progressPercent}%</Text>
 
               <View style={styles.progressBarBg}>
