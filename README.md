@@ -1,82 +1,72 @@
-# Car Specialist AI 🏎️📱
+# Car Specialist AI
 
-> **The Ultimate 100% Offline Automotive Intelligence System for Web & Mobile**  
-> Powered by Google Gemma 2B GGUF running locally on C++ hardware without cloud servers or API bills.
-
----
-
-## 🌟 Executive Overview
-
-**Car Specialist AI** is an advanced, privacy-first automotive intelligence platform available as both a **Web Application** and a **Standalone Native Android Mobile App**. 
-
-Unlike conventional AI tools that rely on cloud REST APIs (OpenAI, Anthropic), Car Specialist AI executes Large Language Models (LLMs) **100% locally on your device's CPU/RAM**. Whether diagnosing OBD fault codes, comparing vehicle specs, or seeking maintenance advice, your queries never leave your hardware.
+An offline-capable automotive assistant application exploring local Large Language Model (LLM) inference across Web and Mobile platforms.
 
 ---
 
-## ✨ Key Features
+## Overview
 
-- ⚡ **100% Offline Local AI Inference:** Zero internet required after setup. Zero monthly server bills, zero API latency.
-- 🔀 **Dual-Response Engine:** Simultaneously generates two distinct AI completion modes:
-  - **Option A (Direct & Factual):** Low temperature (`0.3`) for concise, precise automotive specs and diagnosis.
-  - **Option B (Detailed & Creative):** Higher temperature (`0.6`) for step-by-step descriptive recommendations.
-- 🎠 **Swipeable Pager Carousel:** Compare responses seamlessly with horizontal swipe slides, tab selectors (`⚡ Direct` vs `💡 Descriptive`), and page indicators (`• ◦`).
-- 🌗 **Dual Theme Engine (Light & Dark Mode):** Instant Sun/Moon toggle switching between:
-  - **Dark Automotive Slate Mode:** Deep Charcoal (`#0F172A`), Obsidian Cards (`#1E293B`), Sapphire Blue & Amber Terracotta accents.
-  - **Light Executive Mode:** Clean Warm White (`#FFFFFF`), Soft Ice Blue (`#F8FAFC`), Deep Navy Typography, Emerald Trust Badges (`#10B981`).
-- 🗂️ **Sidebar Navigation & Chat History:** Slide-out drawer with `+ Start New Chat`, active chat selection, conversation deletion, and user profile management.
-- 🔑 **Authentication & Guest Mode:** Secure Login / Signup authentication flow with an instant **Guest Offline Access** fallback mode.
-- 📝 **Rich Markdown Rendering:** Native AST rendering for headings (`#`), bold text (`**text**`), bullet points, and code blocks without raw markdown syntax.
-- 💀 **Skeleton Shimmer Loading Screens:** Pulsing placeholder animations during model initialization and streaming startup to guarantee zero "frozen app" perception.
-- 📥 **Background Download Manager:** Downloads the 1.68 GB GGUF model file in the background via native OS `DownloadManager` (`FileSystemSessionType.BACKGROUND`).
+Car Specialist AI explores on-device AI capabilities for automotive domain queries, such as vehicle diagnostic information, specifications, and maintenance advice. The system operates locally without external cloud API dependencies, ensuring privacy and offline usability once the initial model files are acquired.
+
+The project provides two target interfaces:
+- **Web Application:** React + Vite frontend backed by a Python FastAPI server interfacing with `llama-server.exe` and a local MongoDB instance.
+- **Mobile Application:** React Native + Expo SDK 57 application utilizing `llama.rn` C++ native bindings to execute quantized GGUF models directly on mobile hardware.
 
 ---
 
-## 🏗️ System Architecture
+## Features
+
+- **Local Inference:** Queries are processed on the local device hardware using quantized GGUF models (e.g., Google Gemma 2B), eliminating external API calls.
+- **Dual Response Evaluation:** Generates two completions per query using different sampling temperatures (`0.3` for factual responses and `0.6` for descriptive advice) to allow output comparison.
+- **Dual Theme Support:** Configurable Light and Dark theme modes tailored for readability.
+- **Session & History Storage:** Conversation records and user authentication state are persisted locally (AsyncStorage on mobile, MongoDB on web).
+- **Background Model Fetching:** Initial model downloads utilize background file sessions on mobile devices.
+- **Markdown Rendering:** Formatted text output supporting lists, headings, and code snippets.
+
+---
+
+## Architecture
 
 ```mermaid
 flowchart TD
-    subgraph WEB_SYSTEM["Web Application Stack"]
-        VITE["React + Vite Frontend (Port 5173)"]
-        FASTAPI["FastAPI Backend (Port 8000)"]
-        MONGO["MongoDB (Port 27017)"]
-        LLAMA_SERVER["llama-server.exe (C++ Core)"]
+    subgraph Web_Stack["Web Application Stack"]
+        VITE["React + Vite Frontend"]
+        FASTAPI["FastAPI Backend"]
+        MONGO["Local MongoDB"]
+        LLAMA_SERVER["llama-server.exe"]
         
-        VITE -->|REST / Stream| FASTAPI
-        FASTAPI -->|User & History| MONGO
-        FASTAPI -->|C++ Inference| LLAMA_SERVER
+        VITE --> FASTAPI
+        FASTAPI --> MONGO
+        FASTAPI --> LLAMA_SERVER
     end
 
-    subgraph MOBILE_SYSTEM["Mobile Application Stack"]
+    subgraph Mobile_Stack["Mobile Application Stack"]
         EXPO["React Native + Expo SDK 57"]
-        ZUSTAND["Zustand Store + AsyncStorage"]
-        LLAMA_RN["llama.rn Native C++ Engine (libllama.so)"]
-        CPU_RAM["Mobile RAM (~1.5 GB) & ARM CPU (4-Threads)"]
+        STORE["Zustand + AsyncStorage"]
+        LLAMA_RN["llama.rn (Native C++ Engine)"]
         
-        EXPO -->|State & Offline History| ZUSTAND
-        EXPO -->|In-Process C++ Bridge| LLAMA_RN
-        LLAMA_RN -->|Direct Hardware Acceleration| CPU_RAM
+        EXPO --> STORE
+        EXPO --> LLAMA_RN
     end
 
-    subgraph MODEL_STORAGE["Cloud Model Distribution"]
-        HF["HuggingFace CDN (Google Gemma 2B Q4_K_M GGUF ~1.68 GB)"]
+    subgraph Storage["Model Distribution"]
+        HF["HuggingFace CDN (GGUF Model Weights)"]
     end
 
-    HF -->|One-Time Download| LLAMA_SERVER
-    HF -->|Background Downloader| LLAMA_RN
+    HF --> LLAMA_SERVER
+    HF --> LLAMA_RN
 ```
 
 ---
 
-## 📱 Mobile Standalone Application (`mobile/`)
+## Mobile Application Setup (`mobile/`)
 
-The mobile application is built with **React Native** and **Expo SDK 57**, utilizing `llama.rn` for direct native C++ hardware acceleration on mobile ARM CPUs.
+### Requirements
+- Node.js (v18 or higher)
+- Expo Go app or connected Android device / emulator
 
-### Prerequisites for Mobile
-- **Node.js** (v18 or higher)
-- **Expo Go** or an **Android Device / Emulator**
-
-### Running Mobile App Locally
-1. Navigate to the `mobile` folder:
+### Local Development
+1. Navigate to the mobile directory:
    ```bash
    cd mobile
    ```
@@ -88,63 +78,44 @@ The mobile application is built with **React Native** and **Expo SDK 57**, utili
    ```bash
    npx expo start
    ```
-4. Press `a` to launch on connected Android emulator or scan the QR code with your Android phone.
-
-### Building Standalone Android `.apk` (EAS Cloud)
-To compile a native standalone Android `.apk` binary without installing Android Studio locally:
-```bash
-npx eas-cli build -p android --profile preview
-```
 
 ---
 
-## 💻 Web Application (`backend/` & `frontend/`)
+## Web Application Setup (`backend/` & `frontend/`)
 
-The web application features a **FastAPI** Python backend interfacing with `llama-server.exe` and a high-speed **React/Vite** frontend.
+### Requirements
+- Node.js (v18 or higher)
+- Python (v3.10 or higher)
+- Local MongoDB service on port `27017`
 
-### Prerequisites for Web
-1. **Node.js** (v18 or higher)
-2. **Python** (v3.10 or higher)
-3. **MongoDB** running locally on default port `27017`
+### Running the Web Stack
 
-### Running the Web Application
+1. **Backend Server (Terminal 1):**
+   ```bash
+   cd backend
+   .\venv\Scripts\activate   # On Windows
+   # source venv/bin/activate # On Mac/Linux
+   uvicorn main:app --reload --port 8000
+   ```
 
-Open **two** separate terminal windows:
-
-#### Terminal 1: Backend (FastAPI + LLM)
-```bash
-cd backend
-# Activate virtual environment
-.\venv\Scripts\activate   # Windows
-# source venv/bin/activate # Mac/Linux
-
-# Start FastAPI server
-uvicorn main:app --reload --port 8000
-```
-*Backend runs at `http://localhost:8000`.*
-
-#### Terminal 2: Frontend (React + Vite)
-```bash
-cd frontend
-npm install
-npm run dev
-```
-*Frontend runs at `http://localhost:5173`.*
+2. **Frontend App (Terminal 2):**
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
 
 ---
 
-## 🔌 How to Verify 100% Offline Operation
+## Offline Testing Note
 
-To verify that the AI and application run completely offline without internet:
-1. **Launch the application** (Web or Mobile).
-2. **Complete initial model setup** (downloads Gemma 2B once).
-3. **Disconnect your Wi-Fi & Cellular Data** (Airplane Mode).
-4. **Ask any automotive question** (e.g., *"What does OBD code P0300 mean and how do I fix it?"*).
-5. The AI will stream responses in real-time on your local hardware with zero network connectivity!
+To verify offline operation:
+1. Complete initial application launch and model acquisition while online.
+2. Disconnect network connections (Wi-Fi / Mobile Data).
+3. Submit a query to verify local generation without external network requests.
 
 ---
 
-## 🔒 Copyright & Ownership
+## Project Status & Copyright
 
-**Copyright © Car Specialist AI. All Rights Reserved.**  
-All code, models, branding assets, and documentation are proprietary property.
+Copyright © Car Specialist AI. All Rights Reserved.
