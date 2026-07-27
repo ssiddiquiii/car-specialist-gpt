@@ -1,77 +1,150 @@
-# Car Specialist GPT 🚗
+# Car Specialist AI 🏎️📱
 
-A local, offline-capable AI chat application specialized in cars. This project consists of a Python FastAPI backend (which interfaces with a local LLM via `llama-server.exe`) and a React/Vite frontend.
-
-## 🌟 Features
-- **100% Offline AI:** The backend runs a local LLM model (Llama) directly on your machine. No internet connection is required for generating responses!
-- **Dual Response System:** Get two different AI completions for your prompt and choose the best one.
-- **Persistent Chat History:** All your chats and preferences are saved locally in MongoDB.
-- **Authentication:** Secure user registration and login system.
+> **The Ultimate 100% Offline Automotive Intelligence System for Web & Mobile**  
+> Powered by Google Gemma 2B GGUF running locally on C++ hardware without cloud servers or API bills.
 
 ---
 
-## 🛠️ Prerequisites
+## 🌟 Executive Overview
 
-Before you start, make sure you have the following installed on your system:
-1. **Node.js** (v18 or higher) for the frontend.
-2. **Python** (v3.10 or higher) for the backend.
-3. **MongoDB** running locally on default port `27017`.
+**Car Specialist AI** is an advanced, privacy-first automotive intelligence platform available as both a **Web Application** and a **Standalone Native Android Mobile App**. 
+
+Unlike conventional AI tools that rely on cloud REST APIs (OpenAI, Anthropic), Car Specialist AI executes Large Language Models (LLMs) **100% locally on your device's CPU/RAM**. Whether diagnosing OBD fault codes, comparing vehicle specs, or seeking maintenance advice, your queries never leave your hardware.
 
 ---
 
-## 🚀 How to Start the Project Manually
+## ✨ Key Features
 
-You will need to open **two** separate terminal windows: one for the backend and one for the frontend.
+- ⚡ **100% Offline Local AI Inference:** Zero internet required after setup. Zero monthly server bills, zero API latency.
+- 🔀 **Dual-Response Engine:** Simultaneously generates two distinct AI completion modes:
+  - **Option A (Direct & Factual):** Low temperature (`0.3`) for concise, precise automotive specs and diagnosis.
+  - **Option B (Detailed & Creative):** Higher temperature (`0.6`) for step-by-step descriptive recommendations.
+- 🎠 **Swipeable Pager Carousel:** Compare responses seamlessly with horizontal swipe slides, tab selectors (`⚡ Direct` vs `💡 Descriptive`), and page indicators (`• ◦`).
+- 🌗 **Dual Theme Engine (Light & Dark Mode):** Instant Sun/Moon toggle switching between:
+  - **Dark Automotive Slate Mode:** Deep Charcoal (`#0F172A`), Obsidian Cards (`#1E293B`), Sapphire Blue & Amber Terracotta accents.
+  - **Light Executive Mode:** Clean Warm White (`#FFFFFF`), Soft Ice Blue (`#F8FAFC`), Deep Navy Typography, Emerald Trust Badges (`#10B981`).
+- 🗂️ **Sidebar Navigation & Chat History:** Slide-out drawer with `+ Start New Chat`, active chat selection, conversation deletion, and user profile management.
+- 🔑 **Authentication & Guest Mode:** Secure Login / Signup authentication flow with an instant **Guest Offline Access** fallback mode.
+- 📝 **Rich Markdown Rendering:** Native AST rendering for headings (`#`), bold text (`**text**`), bullet points, and code blocks without raw markdown syntax.
+- 💀 **Skeleton Shimmer Loading Screens:** Pulsing placeholder animations during model initialization and streaming startup to guarantee zero "frozen app" perception.
+- 📥 **Background Download Manager:** Downloads the 1.68 GB GGUF model file in the background via native OS `DownloadManager` (`FileSystemSessionType.BACKGROUND`).
 
-### 1. Start the Backend (Terminal 1)
-The backend manages the database, authentication, and the local AI model.
+---
 
-1. Open a terminal and navigate to the `backend` folder:
+## 🏗️ System Architecture
+
+```mermaid
+flowchart TD
+    subgraph WEB_SYSTEM["Web Application Stack"]
+        VITE["React + Vite Frontend (Port 5173)"]
+        FASTAPI["FastAPI Backend (Port 8000)"]
+        MONGO["MongoDB (Port 27017)"]
+        LLAMA_SERVER["llama-server.exe (C++ Core)"]
+        
+        VITE -->|REST / Stream| FASTAPI
+        FASTAPI -->|User & History| MONGO
+        FASTAPI -->|C++ Inference| LLAMA_SERVER
+    end
+
+    subgraph MOBILE_SYSTEM["Mobile Application Stack"]
+        EXPO["React Native + Expo SDK 57"]
+        ZUSTAND["Zustand Store + AsyncStorage"]
+        LLAMA_RN["llama.rn Native C++ Engine (libllama.so)"]
+        CPU_RAM["Mobile RAM (~1.5 GB) & ARM CPU (4-Threads)"]
+        
+        EXPO -->|State & Offline History| ZUSTAND
+        EXPO -->|In-Process C++ Bridge| LLAMA_RN
+        LLAMA_RN -->|Direct Hardware Acceleration| CPU_RAM
+    end
+
+    subgraph MODEL_STORAGE["Cloud Model Distribution"]
+        HF["HuggingFace CDN (Google Gemma 2B Q4_K_M GGUF ~1.68 GB)"]
+    end
+
+    HF -->|One-Time Download| LLAMA_SERVER
+    HF -->|Background Downloader| LLAMA_RN
+```
+
+---
+
+## 📱 Mobile Standalone Application (`mobile/`)
+
+The mobile application is built with **React Native** and **Expo SDK 57**, utilizing `llama.rn` for direct native C++ hardware acceleration on mobile ARM CPUs.
+
+### Prerequisites for Mobile
+- **Node.js** (v18 or higher)
+- **Expo Go** or an **Android Device / Emulator**
+
+### Running Mobile App Locally
+1. Navigate to the `mobile` folder:
    ```bash
-   cd backend
+   cd mobile
    ```
-2. Activate the Python virtual environment:
-   - **Windows:**
-     ```bash
-     .\venv\Scripts\activate
-     ```
-   - **Mac/Linux:**
-     ```bash
-     source venv/bin/activate
-     ```
-3. Start the FastAPI server:
-   ```bash
-   uvicorn main:app --reload --port 8000
-   ```
-*The backend will now be running at `http://localhost:8000`. Keep this terminal open.*
-
-### 2. Start the Frontend (Terminal 2)
-The frontend is the React user interface.
-
-1. Open a new terminal and navigate to the `frontend` folder:
-   ```bash
-   cd frontend
-   ```
-2. (Optional) If this is your first time or you added packages, install dependencies:
+2. Install dependencies:
    ```bash
    npm install
    ```
-3. Start the Vite development server:
+3. Start the Expo development server:
    ```bash
-   npm run dev
+   npx expo start
    ```
-*The frontend will now be running (usually at `http://localhost:5173`). Open this link in your browser.*
+4. Press `a` to launch on connected Android emulator or scan the QR code with your Android phone.
+
+### Building Standalone Android `.apk` (EAS Cloud)
+To compile a native standalone Android `.apk` binary without installing Android Studio locally:
+```bash
+npx eas-cli build -p android --profile preview
+```
 
 ---
 
-## 🔌 How to Verify it's Running Offline
+## 💻 Web Application (`backend/` & `frontend/`)
 
-To prove that the AI and the application run completely offline:
-1. **Start the project** using the steps above while connected to the internet.
-2. **Turn off your Wi-Fi** or disconnect your ethernet cable.
-3. **Open the app** in your browser (`http://localhost:5173`).
-4. **Log in** (or register a new account). Your data is being saved to your local MongoDB.
-5. **Send a prompt** (e.g., "What are the best SUVs in 2024?").
-6. You will see the AI typing out the response in real-time! 
+The web application features a **FastAPI** Python backend interfacing with `llama-server.exe` and a high-speed **React/Vite** frontend.
 
-Since the backend communicates with `llama-server.exe` running locally on your hardware, no external API calls (like OpenAI) are made. It is completely private and offline.
+### Prerequisites for Web
+1. **Node.js** (v18 or higher)
+2. **Python** (v3.10 or higher)
+3. **MongoDB** running locally on default port `27017`
+
+### Running the Web Application
+
+Open **two** separate terminal windows:
+
+#### Terminal 1: Backend (FastAPI + LLM)
+```bash
+cd backend
+# Activate virtual environment
+.\venv\Scripts\activate   # Windows
+# source venv/bin/activate # Mac/Linux
+
+# Start FastAPI server
+uvicorn main:app --reload --port 8000
+```
+*Backend runs at `http://localhost:8000`.*
+
+#### Terminal 2: Frontend (React + Vite)
+```bash
+cd frontend
+npm install
+npm run dev
+```
+*Frontend runs at `http://localhost:5173`.*
+
+---
+
+## 🔌 How to Verify 100% Offline Operation
+
+To verify that the AI and application run completely offline without internet:
+1. **Launch the application** (Web or Mobile).
+2. **Complete initial model setup** (downloads Gemma 2B once).
+3. **Disconnect your Wi-Fi & Cellular Data** (Airplane Mode).
+4. **Ask any automotive question** (e.g., *"What does OBD code P0300 mean and how do I fix it?"*).
+5. The AI will stream responses in real-time on your local hardware with zero network connectivity!
+
+---
+
+## 🔒 Copyright & Ownership
+
+**Copyright © Car Specialist AI. All Rights Reserved.**  
+All code, models, branding assets, and documentation are proprietary property.
