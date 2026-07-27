@@ -10,13 +10,28 @@ Car Specialist AI explores on-device AI capabilities for automotive domain queri
 
 The project provides two target interfaces:
 - **Web Application:** React + Vite frontend backed by a Python FastAPI server interfacing with `llama-server.exe` and MongoDB Atlas for online account and conversation synchronization.
-- **Mobile Application:** React Native + Expo SDK 57 application utilizing `llama.rn` C++ native bindings to execute quantized GGUF models directly on mobile hardware, with local AsyncStorage for offline persistence.
+- **Mobile Application:** Standalone React Native application utilizing `llama.rn` C++ native bindings to execute quantized GGUF models directly on mobile hardware.
+
+---
+
+## Technical Note on Mobile Execution (Expo Go vs Development Builds)
+
+> **Important Architecture Distinction:** Standard **Expo Go** cannot run this mobile application because `llama.rn` relies on custom compiled native C++ binaries (`libllama.so`). 
+> 
+> To execute the mobile app on Android hardware, you must use either:
+> 1. **Standalone Build:** Install the pre-compiled `.apk` file directly on an Android device.
+> 2. **Development Build:** Run `npx expo run:android` or use Expo Application Services (EAS Build) to compile native C++ modules.
+
+### How Model Delivery Works on Device
+1. Upon first launching the standalone APK or Development Build, the app checks local device storage for model weights.
+2. If absent, the app presents the setup screen allowing the user to download the **Google Gemma 2B GGUF weights (~1.68 GB)** directly from HuggingFace storage via background file session.
+3. Once downloaded, the C++ engine (`libllama.so`) memory-maps the file in local RAM (~1.5 GB footprint) for offline inference.
 
 ---
 
 ## Features
 
-- **Local AI Model Inference:** Queries are processed locally on device hardware using quantized GGUF models (e.g., Google Gemma 2B), eliminating third-party LLM API latency and usage fees.
+- **Local AI Model Inference:** Queries are processed locally on device hardware using quantized GGUF models, eliminating third-party LLM API latency and usage fees.
 - **Online Database Synchronization:** When connected online, user accounts, preferences, and conversation logs sync automatically with MongoDB Atlas cloud database.
 - **Dual Response Evaluation:** Generates two completions per query using different sampling temperatures (`0.3` for factual responses and `0.6` for descriptive advice) to allow output comparison.
 - **Dual Theme Support:** Configurable Light and Dark theme modes tailored for readability.
@@ -39,10 +54,10 @@ flowchart TD
         FASTAPI --> LLAMA_SERVER
     end
 
-    subgraph Mobile_Stack["Mobile Application Stack"]
-        EXPO["React Native + Expo SDK 57"]
+    subgraph Mobile_Stack["Mobile Application Stack (Native C++)"]
+        EXPO["React Native (Native Dev Build / APK)"]
         STORE["Zustand + AsyncStorage"]
-        LLAMA_RN["llama.rn (Native C++ Engine)"]
+        LLAMA_RN["llama.rn (libllama.so C++ Engine)"]
         
         EXPO --> STORE
         EXPO --> LLAMA_RN
@@ -65,9 +80,9 @@ flowchart TD
 
 ### Requirements
 - Node.js (v18 or higher)
-- Expo Go app or connected Android device / emulator
+- Android Device / Emulator with USB Debugging enabled (for native development builds) or pre-compiled `.apk`
 
-### Local Development
+### Local Development (Native Build)
 1. Navigate to the mobile directory:
    ```bash
    cd mobile
@@ -76,10 +91,16 @@ flowchart TD
    ```bash
    npm install
    ```
-3. Start the Expo development server:
+3. Run native Android development build (compiles C++ bindings):
    ```bash
-   npx expo start
+   npx expo run:android
    ```
+
+### Standalone Build Compilation (EAS Cloud)
+To compile a standalone Android `.apk` binary containing native C++ binaries:
+```bash
+npx eas-cli build -p android --profile preview
+```
 
 ---
 
