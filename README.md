@@ -4,6 +4,17 @@ An offline-capable automotive assistant application exploring local Large Langua
 
 ---
 
+## Quick Access & Downloads
+
+For quick evaluation and testing without local compilation setup:
+
+- **Android Mobile App (.apk):** [Download Pre-Compiled APK](https://expo.dev/artifacts/eas/nWLQxaqpVZAjTieNEhACBiZvBNBSwWZ_tjrMthynwG0.apk)  
+  *(Direct download link. Install on any Android device. Model downloads automatically on first launch).*
+- **AI Model Repository (HuggingFace):** [Google Gemma 2B GGUF Model Weights](https://huggingface.co/google/gemma-2-2b-it-GGUF)  
+  *(Public GGUF weights file ~1.68 GB used for local C++ inference).*
+
+---
+
 ## Overview
 
 Car Specialist AI explores on-device AI capabilities for automotive domain queries, such as vehicle diagnostic information, specifications, and maintenance advice. The system operates local AI model inference without external LLM cloud API costs.
@@ -14,18 +25,18 @@ The project provides two target interfaces:
 
 ---
 
-## Technical Note on Mobile Execution (Expo Go vs Development Builds)
+## Technical Architecture & Execution Modes
 
-> **Important Architecture Distinction:** Standard **Expo Go** cannot run this mobile application because `llama.rn` relies on custom compiled native C++ binaries (`libllama.so`). 
+> **Mobile Architecture Note:** Standard **Expo Go** cannot execute this mobile application because `llama.rn` relies on custom compiled native C++ binaries (`libllama.so`). 
 > 
-> To execute the mobile app on Android hardware, you must use either:
-> 1. **Standalone Build:** Install the pre-compiled `.apk` file directly on an Android device.
-> 2. **Development Build:** Run `npx expo run:android` or use Expo Application Services (EAS Build) to compile native C++ modules.
+> To test the mobile app on Android hardware:
+> 1. **Option A (Recommended):** Download and install the pre-compiled **[Standalone APK](https://expo.dev/artifacts/eas/nWLQxaqpVZAjTieNEhACBiZvBNBSwWZ_tjrMthynwG0.apk)** directly.
+> 2. **Option B (Developer Mode):** Execute `npx expo run:android` to compile native C++ development bindings.
 
-### How Model Delivery Works on Device
-1. Upon first launching the standalone APK or Development Build, the app checks local device storage for model weights.
-2. If absent, the app presents the setup screen allowing the user to download the **Google Gemma 2B GGUF weights (~1.68 GB)** directly from HuggingFace storage via background file session.
-3. Once downloaded, the C++ engine (`libllama.so`) memory-maps the file in local RAM (~1.5 GB footprint) for offline inference.
+### Automated Model Delivery Flow
+1. Upon first launching the standalone APK or Web server setup, the system checks for local GGUF model weights.
+2. If missing, the mobile application streams the **Google Gemma 2B GGUF weights (~1.68 GB)** directly from the HuggingFace CDN in background mode.
+3. Once downloaded, the C++ engine (`libllama.so` / `llama-server.exe`) memory-maps the file in local RAM (~1.5 GB footprint) for 100% offline inference.
 
 ---
 
@@ -41,7 +52,7 @@ The project provides two target interfaces:
 
 ---
 
-## Architecture
+## System Architecture
 
 ```mermaid
 flowchart TD
@@ -78,28 +89,14 @@ flowchart TD
 
 ## Mobile Application Setup (`mobile/`)
 
-### Requirements
-- Node.js (v18 or higher)
-- Android Device / Emulator with USB Debugging enabled (for native development builds) or pre-compiled `.apk`
+### Quick Test (No Code Setup Required)
+Download and install the **[Pre-Compiled Android APK](https://expo.dev/artifacts/eas/nWLQxaqpVZAjTieNEhACBiZvBNBSwWZ_tjrMthynwG0.apk)** directly on your device.
 
-### Local Development (Native Build)
-1. Navigate to the mobile directory:
-   ```bash
-   cd mobile
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Run native Android development build (compiles C++ bindings):
-   ```bash
-   npx expo run:android
-   ```
-
-### Standalone Build Compilation (EAS Cloud)
-To compile a standalone Android `.apk` binary containing native C++ binaries:
+### Local Native Development
 ```bash
-npx eas-cli build -p android --profile preview
+cd mobile
+npm install
+npx expo run:android
 ```
 
 ---
@@ -130,7 +127,7 @@ npx eas-cli build -p android --profile preview
 
 ---
 
-## Data Synchronization & Offline Notes
+## Offline Testing Notes
 
 1. **AI Model Inference:** Operates 100% locally on the device CPU once model weights are acquired.
 2. **Cloud Database Sync:** When network connectivity is active, user profiles, preference logs, and conversation histories synchronize with MongoDB Atlas. When offline, the mobile app operates continuously using local storage.
