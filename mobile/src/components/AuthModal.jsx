@@ -9,10 +9,13 @@ import {
   Pressable 
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
 import { useMobileChatStore } from '../store/mobileChatStore';
+import { useThemeStore } from '../store/themeStore';
 
 export default function AuthModal() {
   const insets = useSafeAreaInsets();
+  const { colors } = useThemeStore();
   const [isSignup, setIsSignup] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -50,12 +53,12 @@ export default function AuthModal() {
       <View style={styles.overlay}>
         <Pressable style={styles.backdrop} onPress={toggleAuthModal} />
 
-        <View style={[styles.card, { paddingBottom: insets.bottom + 20 }]}>
+        <View style={[styles.card, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder, paddingBottom: insets.bottom + 20 }]}>
           {/* Header */}
-          <Text style={styles.title}>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>
             {isSignup ? 'Create Account' : 'Welcome Back'}
           </Text>
-          <Text style={styles.subtitle}>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             {isSignup 
               ? 'Sign up to sync your car chat preferences' 
               : 'Sign in to access your saved Car Specialist profile'}
@@ -63,7 +66,9 @@ export default function AuthModal() {
 
           {error ? (
             <View style={styles.errorBox}>
-              <Text style={styles.errorText}>⚠️ {error}</Text>
+              <Text style={styles.errorText}>
+                <Feather name="alert-circle" size={13} color="#FCA5A5" /> {error}
+              </Text>
             </View>
           ) : null}
 
@@ -71,11 +76,11 @@ export default function AuthModal() {
           <View style={styles.form}>
             {isSignup && (
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Full Name</Text>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Full Name</Text>
                 <TextInput 
-                  style={styles.input}
+                  style={[styles.input, { backgroundColor: colors.subCardBg, borderColor: colors.subCardBorder, color: colors.textPrimary }]}
                   placeholder="e.g. Sameer Siddiqui"
-                  placeholderTextColor="#71706B"
+                  placeholderTextColor={colors.inputPlaceholder}
                   value={name}
                   onChangeText={setName}
                 />
@@ -83,11 +88,11 @@ export default function AuthModal() {
             )}
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email Address</Text>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>Email Address</Text>
               <TextInput 
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.subCardBg, borderColor: colors.subCardBorder, color: colors.textPrimary }]}
                 placeholder="user@example.com"
-                placeholderTextColor="#71706B"
+                placeholderTextColor={colors.inputPlaceholder}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 value={email}
@@ -96,11 +101,11 @@ export default function AuthModal() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password</Text>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>Password</Text>
               <TextInput 
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.subCardBg, borderColor: colors.subCardBorder, color: colors.textPrimary }]}
                 placeholder="••••••••"
-                placeholderTextColor="#71706B"
+                placeholderTextColor={colors.inputPlaceholder}
                 secureTextEntry
                 value={password}
                 onChangeText={setPassword}
@@ -110,7 +115,7 @@ export default function AuthModal() {
             {/* Submit Button */}
             <TouchableOpacity 
               activeOpacity={0.8}
-              style={styles.submitBtn}
+              style={[styles.submitBtn, { backgroundColor: colors.accent }]}
               onPress={handleSubmit}
             >
               <Text style={styles.submitBtnText}>
@@ -124,7 +129,7 @@ export default function AuthModal() {
               style={styles.switchBtn}
               onPress={() => setIsSignup(!isSignup)}
             >
-              <Text style={styles.switchText}>
+              <Text style={[styles.switchText, { color: colors.accent }]}>
                 {isSignup 
                   ? 'Already have an account? Sign In' 
                   : "Don't have an account? Sign Up"}
@@ -134,10 +139,10 @@ export default function AuthModal() {
             {/* Guest Access Button */}
             <TouchableOpacity 
               activeOpacity={0.7}
-              style={styles.guestBtn}
+              style={[styles.guestBtn, { borderColor: colors.cardBorder }]}
               onPress={toggleAuthModal}
             >
-              <Text style={styles.guestText}>Continue as Guest (Offline Mode)</Text>
+              <Text style={[styles.guestText, { color: colors.textMuted }]}>Continue as Guest (Offline Mode)</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -156,23 +161,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   card: {
-    backgroundColor: '#1C1C1A',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    borderColor: '#383632',
     borderWidth: 1,
     padding: 24,
   },
   title: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#ECECEC',
     textAlign: 'center',
     marginBottom: 6,
   },
   subtitle: {
     fontSize: 13,
-    color: '#9F9D96',
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -196,21 +197,16 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#D1CFCA',
     marginBottom: 6,
   },
   input: {
-    backgroundColor: '#141413',
-    borderColor: '#383632',
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 11,
-    color: '#ECECEC',
     fontSize: 14,
   },
   submitBtn: {
-    backgroundColor: '#DA7756', // Terracotta accent
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
@@ -226,7 +222,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   switchText: {
-    color: '#DA7756',
     fontSize: 12.5,
     fontWeight: '600',
   },
@@ -234,12 +229,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 6,
     borderTopWidth: 1,
-    borderColor: '#2E2C28',
     marginTop: 6,
     paddingTop: 12,
   },
   guestText: {
-    color: '#9F9D96',
     fontSize: 12,
   }
 });

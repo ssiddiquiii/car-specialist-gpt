@@ -1,25 +1,31 @@
 import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, View, ActivityIndicator, Text } from 'react-native';
+import { StyleSheet, View, Text } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useMobileChatStore } from './src/store/mobileChatStore';
+import { useThemeStore } from './src/store/themeStore';
 import ModelSetupWizard from './src/components/ModelSetupWizard';
 import ChatScreen from './src/components/ChatScreen';
+import { ChatSkeletonLoader } from './src/components/SkeletonLoader';
 
 export default function App() {
   const { isModelReady, isCheckingModel, checkModelStatus } = useMobileChatStore();
+  const { themeMode, colors, initTheme } = useThemeStore();
 
   useEffect(() => {
+    initTheme();
     checkModelStatus();
   }, []);
 
   if (isCheckingModel) {
     return (
       <SafeAreaProvider>
-        <View style={styles.loadingContainer}>
-          <StatusBar style="light" />
-          <ActivityIndicator size="large" color="#DA7756" />
-          <Text style={styles.loadingText}>Initializing Gemma 2B Engine...</Text>
+        <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+          <StatusBar style={themeMode === 'dark' ? 'light' : 'dark'} />
+          <View style={styles.skeletonWrapper}>
+            <ChatSkeletonLoader />
+            <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Initializing Car Specialist Engine...</Text>
+          </View>
         </View>
       </SafeAreaProvider>
     );
@@ -27,8 +33,8 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <View style={styles.container}>
-        <StatusBar style="light" translucent backgroundColor="transparent" />
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <StatusBar style={themeMode === 'dark' ? 'light' : 'dark'} translucent backgroundColor="transparent" />
         {!isModelReady ? <ModelSetupWizard /> : <ChatScreen />}
       </View>
     </SafeAreaProvider>
@@ -38,18 +44,20 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#141413',
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#141413',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 16,
+  },
+  skeletonWrapper: {
+    width: '100%',
+    maxWidth: 440,
+    alignItems: 'center',
   },
   loadingText: {
-    color: '#9F9D96',
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '600',
+    marginTop: 12,
   }
 });

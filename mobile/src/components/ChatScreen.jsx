@@ -9,24 +9,43 @@ import {
   Image, 
   Dimensions, 
   KeyboardAvoidingView, 
-  Platform 
+  Platform,
+  Animated
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Markdown from 'react-native-markdown-display';
+import { Ionicons, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useMobileChatStore } from '../store/mobileChatStore';
+import { useThemeStore } from '../store/themeStore';
 import SidebarDrawer from './SidebarDrawer';
 import AuthModal from './AuthModal';
+import { ChatSkeletonLoader } from './SkeletonLoader';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CAROUSEL_WIDTH = SCREEN_WIDTH - 32;
 
 export default function ChatScreen() {
   const insets = useSafeAreaInsets();
+  const { colors, themeMode, toggleTheme } = useThemeStore();
   const [input, setInput] = useState('');
   const [activeTab, setActiveTab] = useState(0); // 0 for A, 1 for B
   const [inputHeight, setInputHeight] = useState(44);
   const scrollViewRef = useRef(null);
   const carouselRef = useRef(null);
+
+  // Pulse animation for header car emblem
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.15, duration: 1000, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
+      ])
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, [pulseAnim]);
 
   const { 
     conversations, 
@@ -72,14 +91,14 @@ export default function ChatScreen() {
 
   return (
     <KeyboardAvoidingView 
-      style={styles.container} 
+      style={[styles.container, { backgroundColor: colors.background }]} 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
       <View style={[styles.innerContainer, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         
         {/* Top Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { backgroundColor: colors.headerBg, borderColor: colors.cardBorder }]}>
           <View style={styles.headerLeft}>
             {/* Sidebar Hamburger Button */}
             <TouchableOpacity 
@@ -87,24 +106,38 @@ export default function ChatScreen() {
               style={styles.hamburgerBtn} 
               onPress={toggleSidebar}
             >
-              <Text style={styles.hamburgerIcon}>☰</Text>
+              <Feather name="menu" size={22} color={colors.accent} />
             </TouchableOpacity>
 
             <View style={styles.headerTitleGroup}>
-              <Image 
-                source={require('../../assets/icon.png')} 
-                style={styles.headerIcon} 
-              />
+              <Animated.View style={[styles.carIconBadge, { backgroundColor: colors.badgeBg, transform: [{ scale: pulseAnim }] }]}>
+                <Ionicons name="car-sport" size={18} color={colors.accent} />
+              </Animated.View>
               <View>
-                <Text style={styles.headerTitle}>Car Specialist AI</Text>
-                <Text style={styles.headerSubtitle}>Offline AI Assistant</Text>
+                <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Car Specialist AI</Text>
+                <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>Offline AI Assistant</Text>
               </View>
             </View>
           </View>
 
-          <View style={styles.offlineBadge}>
-            <View style={styles.greenDot} />
-            <Text style={styles.badgeText}>OFFLINE ACTIVE</Text>
+          <View style={styles.headerRight}>
+            <View style={[styles.offlineBadge, { backgroundColor: colors.offlineGreenBg, borderColor: colors.offlineGreenBorder }]}>
+              <View style={[styles.greenDot, { backgroundColor: colors.offlineGreenText }]} />
+              <Text style={[styles.badgeText, { color: colors.offlineGreenText }]}>OFFLINE ACTIVE</Text>
+            </View>
+
+            {/* Theme Toggle Button */}
+            <TouchableOpacity 
+              activeOpacity={0.7} 
+              style={[styles.themeBtn, { backgroundColor: colors.subCardBg, borderColor: colors.subCardBorder }]}
+              onPress={toggleTheme}
+            >
+              <Ionicons 
+                name={themeMode === 'dark' ? 'sunny' : 'moon'} 
+                size={16} 
+                color={themeMode === 'dark' ? '#F59E0B' : '#6366F1'} 
+              />
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -117,11 +150,11 @@ export default function ChatScreen() {
         >
           {currentConvo.messages.length === 0 && !dualResponse && (
             <View style={styles.emptyContainer}>
-              <View style={styles.emptyIconBg}>
-                <Text style={styles.emptyIcon}>🚗</Text>
+              <View style={[styles.emptyIconBg, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
+                <Ionicons name="car-sport" size={32} color={colors.accent} />
               </View>
-              <Text style={styles.emptyTitle}>Car Specialist AI Ready</Text>
-              <Text style={styles.emptyText}>
+              <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>Car Specialist AI Ready</Text>
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
                 Ask about vehicle diagnostics, OBD fault codes, engine specs, repair steps, or buying recommendations.
               </Text>
             </View>
@@ -132,57 +165,73 @@ export default function ChatScreen() {
               key={msg.id} 
               style={[
                 styles.messageBubble, 
-                msg.role === 'user' ? styles.userBubble : styles.aiBubble
+                msg.role === 'user' 
+                  ? [styles.userBubble, { backgroundColor: colors.userBubble }] 
+                  : [styles.aiBubble, { backgroundColor: colors.aiBubble, borderColor: colors.cardBorder }]
               ]}
             >
-              <Text style={[styles.roleLabel, msg.role === 'user' ? styles.userRole : styles.aiRole]}>
+              <Text style={[styles.roleLabel, msg.role === 'user' ? styles.userRole : [styles.aiRole, { color: colors.accent }]]}>
                 {msg.role === 'user' ? 'You' : 'Car Specialist AI'}
               </Text>
 
               {msg.role === 'user' ? (
                 <Text style={styles.userMessageText}>{msg.content}</Text>
               ) : (
-                <Markdown style={markdownStyles}>
+                <Markdown style={getMarkdownStyles(colors)}>
                   {msg.content}
                 </Markdown>
               )}
             </View>
           ))}
 
+          {/* Dual Response Streaming & Skeleton Placeholder */}
+          {isTyping && !dualResponse?.response_a.content && (
+            <ChatSkeletonLoader />
+          )}
+
           {/* ChatGPT / Claude Style Horizontal Swipeable Dual Response Carousel */}
           {dualResponse && (
-            <View style={styles.dualCardContainer}>
+            <View style={[styles.dualCardContainer, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
               <View style={styles.dualHeaderRow}>
                 <View style={styles.dualTitleGroup}>
-                  <Text style={styles.dualTitle}>Dual AI Answers</Text>
-                  <Text style={styles.dualSubtitle}>Swipe left or right to compare options</Text>
+                  <Text style={[styles.dualTitle, { color: colors.textPrimary }]}>Dual AI Answers</Text>
+                  <Text style={[styles.dualSubtitle, { color: colors.textSecondary }]}>Swipe left or right to compare options</Text>
                 </View>
                 {isTyping && (
                   <TouchableOpacity activeOpacity={0.8} style={styles.stopBtn} onPress={stopGeneration}>
-                    <Text style={styles.stopText}>⏹ Stop</Text>
+                    <Feather name="square" size={12} color="#FCA5A5" />
+                    <Text style={styles.stopText}>Stop</Text>
                   </TouchableOpacity>
                 )}
               </View>
 
               {/* Segmented Tab Buttons */}
-              <View style={styles.tabBar}>
+              <View style={[styles.tabBar, { backgroundColor: colors.subCardBg, borderColor: colors.subCardBorder }]}>
                 <TouchableOpacity 
                   activeOpacity={0.8}
-                  style={[styles.tabButton, activeTab === 0 && styles.activeTabButton]}
+                  style={[
+                    styles.tabButton, 
+                    activeTab === 0 && [styles.activeTabButton, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]
+                  ]}
                   onPress={() => handleTabPress(0)}
                 >
-                  <Text style={[styles.tabButtonText, activeTab === 0 && styles.activeTabText]}>
-                    ⚡ Direct & Factual
+                  <Ionicons name="flash" size={13} color={activeTab === 0 ? colors.accent : colors.textMuted} />
+                  <Text style={[styles.tabButtonText, { color: colors.textMuted }, activeTab === 0 && { color: colors.accent, fontWeight: '700' }]}>
+                    Direct & Factual
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity 
                   activeOpacity={0.8}
-                  style={[styles.tabButton, activeTab === 1 && styles.activeTabButton]}
+                  style={[
+                    styles.tabButton, 
+                    activeTab === 1 && [styles.activeTabButton, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]
+                  ]}
                   onPress={() => handleTabPress(1)}
                 >
-                  <Text style={[styles.tabButtonText, activeTab === 1 && styles.activeTabText]}>
-                    💡 Detailed & Creative
+                  <Ionicons name="sparkles" size={13} color={activeTab === 1 ? colors.accent : colors.textMuted} />
+                  <Text style={[styles.tabButtonText, { color: colors.textMuted }, activeTab === 1 && { color: colors.accent, fontWeight: '700' }]}>
+                    Detailed & Creative
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -198,11 +247,11 @@ export default function ChatScreen() {
                 style={styles.carouselScrollView}
               >
                 {/* Slide A */}
-                <View style={[styles.slideCard, { width: CAROUSEL_WIDTH - 28 }]}>
+                <View style={[styles.slideCard, { width: CAROUSEL_WIDTH - 28, backgroundColor: colors.subCardBg, borderColor: colors.subCardBorder }]}>
                   <View style={styles.slideHeader}>
-                    <Text style={styles.slideTitle}>Option A — Direct & Precise</Text>
-                    <View style={styles.modeChip}>
-                      <Text style={styles.modeChipText}>Factual Mode</Text>
+                    <Text style={[styles.slideTitle, { color: colors.textPrimary }]}>Option A — Direct & Precise</Text>
+                    <View style={[styles.modeChip, { backgroundColor: colors.badgeBg, borderColor: colors.badgeBorder }]}>
+                      <Text style={[styles.modeChipText, { color: colors.badgeText }]}>Factual Mode</Text>
                     </View>
                   </View>
 
@@ -211,24 +260,29 @@ export default function ChatScreen() {
                     nestedScrollEnabled
                     showsVerticalScrollIndicator={true}
                   >
-                    <Markdown style={markdownStyles}>
+                    <Markdown style={getMarkdownStyles(colors)}>
                       {dualResponse.response_a.content || (isTyping ? 'Generating factual response...' : 'No response generated.')}
                     </Markdown>
                   </ScrollView>
 
                   {dualResponse.streaming_complete && (
-                    <TouchableOpacity activeOpacity={0.8} style={styles.chooseBtn} onPress={() => chooseResponse('a')}>
-                      <Text style={styles.chooseBtnText}>✓ Use Option A</Text>
+                    <TouchableOpacity 
+                      activeOpacity={0.8} 
+                      style={[styles.chooseBtn, { backgroundColor: colors.accent }]} 
+                      onPress={() => chooseResponse('a')}
+                    >
+                      <Ionicons name="checkmark-circle" size={16} color="#FFFFFF" />
+                      <Text style={styles.chooseBtnText}>Use Option A</Text>
                     </TouchableOpacity>
                   )}
                 </View>
 
                 {/* Slide B */}
-                <View style={[styles.slideCard, { width: CAROUSEL_WIDTH - 28 }]}>
+                <View style={[styles.slideCard, { width: CAROUSEL_WIDTH - 28, backgroundColor: colors.subCardBg, borderColor: colors.subCardBorder }]}>
                   <View style={styles.slideHeader}>
-                    <Text style={styles.slideTitle}>Option B — Detailed & Creative</Text>
-                    <View style={styles.modeChip}>
-                      <Text style={styles.modeChipText}>Descriptive Mode</Text>
+                    <Text style={[styles.slideTitle, { color: colors.textPrimary }]}>Option B — Detailed & Creative</Text>
+                    <View style={[styles.modeChip, { backgroundColor: colors.badgeBg, borderColor: colors.badgeBorder }]}>
+                      <Text style={[styles.modeChipText, { color: colors.badgeText }]}>Descriptive Mode</Text>
                     </View>
                   </View>
 
@@ -237,14 +291,19 @@ export default function ChatScreen() {
                     nestedScrollEnabled
                     showsVerticalScrollIndicator={true}
                   >
-                    <Markdown style={markdownStyles}>
+                    <Markdown style={getMarkdownStyles(colors)}>
                       {dualResponse.response_b.content || (isTyping ? 'Generating descriptive response...' : 'No response generated.')}
                     </Markdown>
                   </ScrollView>
 
                   {dualResponse.streaming_complete && (
-                    <TouchableOpacity activeOpacity={0.8} style={styles.chooseBtn} onPress={() => chooseResponse('b')}>
-                      <Text style={styles.chooseBtnText}>✓ Use Option B</Text>
+                    <TouchableOpacity 
+                      activeOpacity={0.8} 
+                      style={[styles.chooseBtn, { backgroundColor: colors.accent }]} 
+                      onPress={() => chooseResponse('b')}
+                    >
+                      <Ionicons name="checkmark-circle" size={16} color="#FFFFFF" />
+                      <Text style={styles.chooseBtnText}>Use Option B</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -252,19 +311,27 @@ export default function ChatScreen() {
 
               {/* Page Indicator Dots */}
               <View style={styles.paginationDots}>
-                <View style={[styles.dot, activeTab === 0 && styles.activeDot]} />
-                <View style={[styles.dot, activeTab === 1 && styles.activeDot]} />
+                <View style={[styles.dot, { backgroundColor: colors.cardBorder }, activeTab === 0 && [styles.activeDot, { backgroundColor: colors.accent }]]} />
+                <View style={[styles.dot, { backgroundColor: colors.cardBorder }, activeTab === 1 && [styles.activeDot, { backgroundColor: colors.accent }]]} />
               </View>
             </View>
           )}
         </ScrollView>
 
         {/* Input Bar shiftable with Keyboard */}
-        <View style={styles.inputContainer}>
+        <View style={[styles.inputContainer, { backgroundColor: colors.headerBg, borderColor: colors.cardBorder }]}>
           <TextInput
-            style={[styles.textInput, { height: Math.min(100, Math.max(44, inputHeight)) }]}
+            style={[
+              styles.textInput, 
+              { 
+                backgroundColor: colors.inputBg, 
+                borderColor: colors.inputBorder, 
+                color: colors.inputText,
+                height: Math.min(100, Math.max(44, inputHeight)) 
+              }
+            ]}
             placeholder="Ask about cars..."
-            placeholderTextColor="#71706B"
+            placeholderTextColor={colors.inputPlaceholder}
             value={input}
             onChangeText={setInput}
             onContentSizeChange={(e) => {
@@ -274,11 +341,11 @@ export default function ChatScreen() {
           />
           <TouchableOpacity 
             activeOpacity={0.8} 
-            style={[styles.sendBtn, (!input.trim() || isTyping) && styles.disabledSendBtn]} 
+            style={[styles.sendBtn, { backgroundColor: colors.accent }, (!input.trim() || isTyping) && styles.disabledSendBtn]} 
             onPress={handleSend} 
             disabled={!input.trim() || isTyping}
           >
-            <Text style={styles.sendIcon}>➔</Text>
+            <Ionicons name="send" size={18} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
 
@@ -291,44 +358,44 @@ export default function ChatScreen() {
   );
 }
 
-const markdownStyles = {
+const getMarkdownStyles = (colors) => ({
   body: {
-    color: '#ECECEC',
+    color: colors.textPrimary,
     fontSize: 13.5,
     lineHeight: 20,
   },
   strong: {
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: colors.textPrimary,
   },
   em: {
     fontStyle: 'italic',
-    color: '#D1CFCA',
+    color: colors.textSecondary,
   },
   heading1: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#DA7756',
+    color: colors.accent,
     marginTop: 8,
     marginBottom: 4,
   },
   heading2: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#ECECEC',
+    color: colors.textPrimary,
     marginTop: 6,
     marginBottom: 4,
   },
   heading3: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#ECECEC',
+    color: colors.textPrimary,
     marginTop: 4,
     marginBottom: 2,
   },
   code_inline: {
-    backgroundColor: '#27272A',
-    color: '#DA7756',
+    backgroundColor: colors.subCardBg,
+    color: colors.accent,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -336,12 +403,12 @@ const markdownStyles = {
     fontSize: 12,
   },
   code_block: {
-    backgroundColor: '#141413',
-    borderColor: '#383632',
+    backgroundColor: colors.subCardBg,
+    borderColor: colors.subCardBorder,
     borderWidth: 1,
     borderRadius: 8,
     padding: 10,
-    color: '#DA7756',
+    color: colors.accent,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
     fontSize: 12,
     marginVertical: 6,
@@ -360,12 +427,11 @@ const markdownStyles = {
     marginTop: 0,
     marginBottom: 6,
   }
-};
+});
 
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
-    backgroundColor: '#141413' // Claude warm charcoal
   },
   innerContainer: {
     flex: 1,
@@ -373,9 +439,7 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#1C1C1A',
     borderBottomWidth: 1,
-    borderColor: '#2E2C28',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -388,37 +452,35 @@ const styles = StyleSheet.create({
   hamburgerBtn: {
     padding: 4,
   },
-  hamburgerIcon: {
-    fontSize: 22,
-    color: '#DA7756',
-    fontWeight: '700',
-  },
   headerTitleGroup: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
   },
-  headerIcon: {
+  carIconBadge: {
     width: 34,
     height: 34,
-    borderRadius: 9,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: { 
     fontSize: 16, 
     fontWeight: '700', 
-    color: '#ECECEC',
     letterSpacing: -0.2,
   },
   headerSubtitle: {
     fontSize: 11,
-    color: '#9F9D96',
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   offlineBadge: { 
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(16, 185, 129, 0.12)', 
-    borderColor: 'rgba(16, 185, 129, 0.3)',
     borderWidth: 1,
     paddingHorizontal: 8, 
     paddingVertical: 4, 
@@ -428,12 +490,18 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#10B981',
   },
   badgeText: { 
     fontSize: 9.5, 
     fontWeight: '700', 
-    color: '#10B981' 
+  },
+  themeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   chatList: { 
     flex: 1, 
@@ -452,25 +520,18 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 20,
-    backgroundColor: '#1F1E1B',
-    borderColor: '#383632',
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 14,
   },
-  emptyIcon: {
-    fontSize: 30,
-  },
   emptyTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#ECECEC',
     marginBottom: 6,
   },
   emptyText: {
     fontSize: 13,
-    color: '#9F9D96',
     textAlign: 'center',
     lineHeight: 19,
   },
@@ -482,13 +543,10 @@ const styles = StyleSheet.create({
     maxWidth: '85%'
   },
   userBubble: { 
-    backgroundColor: '#DA7756', // Claude terracotta accent
     alignSelf: 'flex-end' 
   },
   aiBubble: { 
-    backgroundColor: '#1F1E1B', 
     alignSelf: 'flex-start', 
-    borderColor: '#383632', 
     borderWidth: 1 
   },
   roleLabel: { 
@@ -497,22 +555,18 @@ const styles = StyleSheet.create({
     marginBottom: 4 
   },
   userRole: {
-    color: 'rgba(255, 255, 255, 0.85)',
+    color: 'rgba(255, 255, 255, 0.9)',
   },
-  aiRole: {
-    color: '#DA7756',
-  },
+  aiRole: {},
   userMessageText: {
     color: '#FFFFFF',
     fontSize: 14,
     lineHeight: 20,
   },
   dualCardContainer: { 
-    backgroundColor: '#1C1C1A', 
     borderRadius: 20, 
     padding: 14, 
     marginVertical: 14, 
-    borderColor: '#383632', 
     borderWidth: 1 
   },
   dualHeaderRow: { 
@@ -525,17 +579,18 @@ const styles = StyleSheet.create({
   dualTitle: { 
     fontSize: 14, 
     fontWeight: '700', 
-    color: '#ECECEC' 
   },
   dualSubtitle: {
     fontSize: 11,
-    color: '#9F9D96',
   },
   stopBtn: { 
     backgroundColor: '#991B1B', 
     paddingHorizontal: 12, 
     paddingVertical: 5, 
-    borderRadius: 10 
+    borderRadius: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   stopText: { 
     color: '#FCA5A5', 
@@ -544,42 +599,34 @@ const styles = StyleSheet.create({
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#141413',
     borderRadius: 12,
     padding: 3,
     marginBottom: 12,
-    borderColor: '#2E2C28',
     borderWidth: 1,
   },
   tabButton: {
     flex: 1,
     paddingVertical: 8,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
     borderRadius: 10,
   },
   activeTabButton: {
-    backgroundColor: '#27272A',
-    borderColor: '#383632',
     borderWidth: 1,
   },
   tabButtonText: {
     fontSize: 11.5,
     fontWeight: '600',
-    color: '#9F9D96',
-  },
-  activeTabText: {
-    color: '#DA7756',
-    fontWeight: '700',
   },
   carouselScrollView: {
     width: '100%',
   },
   slideCard: { 
-    backgroundColor: '#141413', 
     borderRadius: 14, 
     padding: 14, 
     minHeight: 220, 
-    borderColor: '#2E2C28',
     borderWidth: 1,
     justifyContent: 'space-between',
     marginRight: 10,
@@ -593,11 +640,8 @@ const styles = StyleSheet.create({
   slideTitle: { 
     fontSize: 13, 
     fontWeight: '700', 
-    color: '#ECECEC' 
   },
   modeChip: {
-    backgroundColor: 'rgba(218, 119, 86, 0.15)',
-    borderColor: 'rgba(218, 119, 86, 0.3)',
     borderWidth: 1,
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -606,19 +650,19 @@ const styles = StyleSheet.create({
   modeChipText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#DA7756',
   },
   slideScroll: { 
     flex: 1, 
     maxHeight: 240 
   },
   chooseBtn: { 
-    backgroundColor: '#DA7756', 
     borderRadius: 12, 
     paddingVertical: 11, 
     marginTop: 12, 
+    flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#DA7756',
+    justifyContent: 'center',
+    gap: 6,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
@@ -639,35 +683,27 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#383632',
   },
   activeDot: {
     width: 18,
-    backgroundColor: '#DA7756',
   },
   inputContainer: { 
     flexDirection: 'row', 
     paddingHorizontal: 14, 
     paddingVertical: 10, 
-    backgroundColor: '#1C1C1A', 
     borderTopWidth: 1, 
-    borderColor: '#2E2C28', 
     alignItems: 'center', 
     gap: 10 
   },
   textInput: { 
     flex: 1, 
-    backgroundColor: '#141413', 
-    color: '#ECECEC', 
     borderRadius: 22, 
     paddingHorizontal: 18, 
     paddingVertical: 10, 
     fontSize: 14, 
-    borderColor: '#383632',
     borderWidth: 1,
   },
   sendBtn: { 
-    backgroundColor: '#DA7756', 
     width: 44, 
     height: 44, 
     borderRadius: 22, 
@@ -675,12 +711,6 @@ const styles = StyleSheet.create({
     alignItems: 'center' 
   },
   disabledSendBtn: {
-    backgroundColor: '#383632',
-    opacity: 0.5,
-  },
-  sendIcon: { 
-    color: '#FFF', 
-    fontSize: 18, 
-    fontWeight: '700' 
+    opacity: 0.4,
   }
 });

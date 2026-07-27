@@ -1,21 +1,40 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Image, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons, Feather } from '@expo/vector-icons';
 import { useMobileChatStore } from '../store/mobileChatStore';
+import { useThemeStore } from '../store/themeStore';
 
 export default function ModelSetupWizard() {
   const insets = useSafeAreaInsets();
   const { isDownloading, downloadProgress, startModelDownload, downloadError } = useMobileChatStore();
+  const { colors, themeMode, toggleTheme } = useThemeStore();
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 }]}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 }]}>
+      
+      {/* Top Bar with Theme Toggle */}
+      <View style={styles.topBar}>
+        <TouchableOpacity 
+          activeOpacity={0.7} 
+          style={[styles.themeBtn, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}
+          onPress={toggleTheme}
+        >
+          <Ionicons 
+            name={themeMode === 'dark' ? 'sunny' : 'moon'} 
+            size={18} 
+            color={themeMode === 'dark' ? '#F59E0B' : '#6366F1'} 
+          />
+        </TouchableOpacity>
+      </View>
+
       <ScrollView 
         contentContainerStyle={styles.scrollContent} 
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
           {/* Realistic App Icon */}
-          <View style={styles.iconWrapper}>
+          <View style={[styles.iconWrapper, { borderColor: colors.cardBorder }]}>
             <Image 
               source={require('../../assets/icon.png')} 
               style={styles.appIcon} 
@@ -23,57 +42,60 @@ export default function ModelSetupWizard() {
             />
           </View>
 
-          <Text style={styles.title}>Car Specialist AI Setup</Text>
-          <Text style={styles.subtitle}>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>Car Specialist AI Setup</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             Your personal automotive assistant. Works 100% offline on your phone without internet.
           </Text>
 
           {downloadError && (
             <View style={styles.errorBox}>
-              <Text style={styles.errorTitle}>⚠️ Setup Notice</Text>
+              <Text style={styles.errorTitle}>
+                <Feather name="alert-triangle" size={14} color="#FCA5A5" /> Setup Notice
+              </Text>
               <Text style={styles.errorText}>{downloadError}</Text>
             </View>
           )}
 
           {!isDownloading ? (
             <View style={styles.singleOptionContainer}>
-              <View style={styles.modelDetailCard}>
+              <View style={[styles.modelDetailCard, { backgroundColor: colors.subCardBg, borderColor: colors.subCardBorder }]}>
                 <View style={styles.modelHeader}>
-                  <Text style={styles.modelName}>Offline AI Engine</Text>
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>1.68 GB</Text>
+                  <Text style={[styles.modelName, { color: colors.textPrimary }]}>Offline AI Engine</Text>
+                  <View style={[styles.badge, { backgroundColor: colors.badgeBg, borderColor: colors.badgeBorder }]}>
+                    <Text style={[styles.badgeText, { color: colors.badgeText }]}>1.68 GB</Text>
                   </View>
                 </View>
-                <Text style={styles.modelDesc}>
+                <Text style={[styles.modelDesc, { color: colors.textSecondary }]}>
                   Downloads once onto your device so you can diagnose car issues and get advice anywhere without Wi-Fi.
                 </Text>
               </View>
 
               <TouchableOpacity 
                 activeOpacity={0.8}
-                style={styles.downloadBtn}
+                style={[styles.downloadBtn, { backgroundColor: colors.accent }]}
                 onPress={() => startModelDownload()}
               >
+                <Feather name="download" size={18} color="#FFFFFF" />
                 <Text style={styles.downloadBtnText}>Download AI Engine (1.68 GB)</Text>
               </TouchableOpacity>
             </View>
           ) : (
             <View style={styles.progressBox}>
-              <ActivityIndicator size="large" color="#DA7756" />
-              <Text style={styles.progressTitle}>Downloading AI Engine...</Text>
-              <Text style={styles.progressPercent}>{downloadProgress.progressPercent}%</Text>
+              <ActivityIndicator size="large" color={colors.accent} />
+              <Text style={[styles.progressTitle, { color: colors.textPrimary }]}>Downloading AI Engine...</Text>
+              <Text style={[styles.progressPercent, { color: colors.accent }]}>{downloadProgress.progressPercent}%</Text>
 
-              <View style={styles.progressBarBg}>
-                <View style={[styles.progressBarFill, { width: `${downloadProgress.progressPercent}%` }]} />
+              <View style={[styles.progressBarBg, { backgroundColor: colors.subCardBg }]}>
+                <View style={[styles.progressBarFill, { width: `${downloadProgress.progressPercent}%`, backgroundColor: colors.accent }]} />
               </View>
 
-              <Text style={styles.progressDetails}>
+              <Text style={[styles.progressDetails, { color: colors.textSecondary }]}>
                 {downloadProgress.writtenMB} MB / {downloadProgress.totalMB} MB
               </Text>
               
-              <View style={styles.infoBadgeContainer}>
-                <Text style={styles.notice}>
-                  ⚡ Background download supported. You can switch apps or use your phone while downloading.
+              <View style={[styles.infoBadgeContainer, { backgroundColor: colors.badgeBg, borderColor: colors.badgeBorder }]}>
+                <Text style={[styles.notice, { color: colors.badgeText }]}>
+                  <Feather name="zap" size={13} color={colors.badgeText} /> Background download supported. You can switch apps or use your phone while downloading.
                 </Text>
               </View>
             </View>
@@ -87,7 +109,18 @@ export default function ModelSetupWizard() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#141413', // Warm Claude Charcoal
+  },
+  topBar: {
+    paddingHorizontal: 20,
+    alignItems: 'flex-end',
+  },
+  themeBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   scrollContent: {
     flexGrow: 1,
@@ -96,17 +129,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   card: {
-    backgroundColor: '#1F1E1B', // Claude warm card background
     borderRadius: 24,
     padding: 28,
     width: '100%',
     maxWidth: 420,
     alignItems: 'center',
-    borderColor: '#383632',
     borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.15,
     shadowRadius: 20,
     elevation: 8,
   },
@@ -116,12 +147,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     overflow: 'hidden',
     marginBottom: 20,
-    borderColor: '#4A4741',
     borderWidth: 1.5,
-    shadowColor: '#DA7756',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
   },
   appIcon: {
     width: '100%',
@@ -130,14 +156,12 @@ const styles = StyleSheet.create({
   title: { 
     fontSize: 23, 
     fontWeight: '700', 
-    color: '#ECECEC', 
     textAlign: 'center', 
     marginBottom: 8,
     letterSpacing: -0.3,
   },
   subtitle: { 
     fontSize: 13.5, 
-    color: '#9F9D96', 
     textAlign: 'center', 
     marginBottom: 26, 
     lineHeight: 20 
@@ -147,8 +171,6 @@ const styles = StyleSheet.create({
     gap: 16 
   },
   modelDetailCard: {
-    backgroundColor: '#171714',
-    borderColor: '#383632',
     borderWidth: 1,
     borderRadius: 16,
     padding: 16,
@@ -162,36 +184,28 @@ const styles = StyleSheet.create({
   modelName: { 
     fontSize: 15, 
     fontWeight: '700', 
-    color: '#ECECEC' 
   },
   badge: {
-    backgroundColor: 'rgba(218, 119, 86, 0.15)',
-    borderColor: 'rgba(218, 119, 86, 0.4)',
     borderWidth: 1,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
   },
   badgeText: {
-    color: '#DA7756',
     fontSize: 11,
     fontWeight: '700',
   },
   modelDesc: { 
     fontSize: 12.5, 
-    color: '#9F9D96', 
     lineHeight: 18 
   },
   downloadBtn: {
-    backgroundColor: '#DA7756', // Terracotta Claude Accent
     borderRadius: 14,
     paddingVertical: 16,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#DA7756',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    gap: 8,
     elevation: 4,
   },
   downloadBtnText: {
@@ -207,36 +221,29 @@ const styles = StyleSheet.create({
   progressTitle: { 
     fontSize: 16, 
     fontWeight: '600', 
-    color: '#ECECEC', 
     marginTop: 14 
   },
   progressPercent: { 
     fontSize: 34, 
     fontWeight: '800', 
-    color: '#DA7756', 
     marginVertical: 6 
   },
   progressBarBg: { 
     width: '100%', 
     height: 10, 
-    backgroundColor: '#2A2926', 
     borderRadius: 5, 
     overflow: 'hidden', 
     marginVertical: 12 
   },
   progressBarFill: { 
     height: '100%', 
-    backgroundColor: '#DA7756' 
   },
   progressDetails: { 
     fontSize: 13, 
-    color: '#D1CFCA', 
     marginBottom: 12,
     fontWeight: '500' 
   },
   infoBadgeContainer: {
-    backgroundColor: 'rgba(218, 119, 86, 0.1)',
-    borderColor: 'rgba(218, 119, 86, 0.25)',
     borderWidth: 1,
     borderRadius: 12,
     padding: 12,
@@ -244,7 +251,6 @@ const styles = StyleSheet.create({
   },
   notice: { 
     fontSize: 12, 
-    color: '#E6A188', 
     textAlign: 'center',
     lineHeight: 17 
   },

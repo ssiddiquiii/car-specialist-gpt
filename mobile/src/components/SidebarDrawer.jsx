@@ -6,14 +6,16 @@ import {
   TouchableOpacity, 
   ScrollView, 
   Modal, 
-  Image, 
   Pressable 
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import { useMobileChatStore } from '../store/mobileChatStore';
+import { useThemeStore } from '../store/themeStore';
 
 export default function SidebarDrawer() {
   const insets = useSafeAreaInsets();
+  const { colors, themeMode, toggleTheme } = useThemeStore();
   const { 
     isSidebarOpen, 
     closeSidebar, 
@@ -41,70 +43,95 @@ export default function SidebarDrawer() {
         <Pressable style={styles.backdrop} onPress={closeSidebar} />
 
         {/* Slide Drawer Content */}
-        <View style={[styles.drawer, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 12 }]}>
+        <View style={[styles.drawer, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder, paddingTop: insets.top + 12, paddingBottom: insets.bottom + 12 }]}>
           
           {/* Header & User Profile Card */}
-          <View style={styles.profileCard}>
-            <View style={styles.avatarCircle}>
+          <View style={[styles.profileCard, { backgroundColor: colors.subCardBg, borderColor: colors.subCardBorder }]}>
+            <View style={[styles.avatarCircle, { backgroundColor: colors.accent }]}>
               <Text style={styles.avatarText}>
-                {user ? user.name.charAt(0).toUpperCase() : '👤'}
+                {user ? user.name.charAt(0).toUpperCase() : <Feather name="user" size={18} color="#FFFFFF" />}
               </Text>
             </View>
             <View style={styles.profileInfo}>
-              <Text style={styles.userName}>{user ? user.name : 'Guest User'}</Text>
-              <Text style={styles.userEmail}>{user ? user.email : 'Offline Access Mode'}</Text>
+              <Text style={[styles.userName, { color: colors.textPrimary }]}>{user ? user.name : 'Guest User'}</Text>
+              <Text style={[styles.userEmail, { color: colors.textSecondary }]}>{user ? user.email : 'Offline Access Mode'}</Text>
             </View>
           </View>
 
-          {/* Auth Button (Login / Logout) */}
-          <TouchableOpacity 
-            activeOpacity={0.8} 
-            style={styles.authBtn} 
-            onPress={() => {
-              if (user) {
-                logoutUser();
-              } else {
-                closeSidebar();
-                toggleAuthModal();
-              }
-            }}
-          >
-            <Text style={styles.authBtnText}>
-              {user ? '🔒 Sign Out' : '🔑 Sign In / Sign Up'}
-            </Text>
-          </TouchableOpacity>
+          {/* Action Row: Theme Toggle & Auth */}
+          <View style={styles.actionRow}>
+            <TouchableOpacity 
+              activeOpacity={0.8} 
+              style={[styles.authBtn, { backgroundColor: colors.subCardBg, borderColor: colors.subCardBorder }]} 
+              onPress={() => {
+                if (user) {
+                  logoutUser();
+                } else {
+                  closeSidebar();
+                  toggleAuthModal();
+                }
+              }}
+            >
+              <Feather name={user ? "log-out" : "log-in"} size={14} color={colors.accent} />
+              <Text style={[styles.authBtnText, { color: colors.accent }]}>
+                {user ? 'Sign Out' : 'Sign In'}
+              </Text>
+            </TouchableOpacity>
 
-          <View style={styles.divider} />
+            <TouchableOpacity 
+              activeOpacity={0.8} 
+              style={[styles.themeToggleBtn, { backgroundColor: colors.subCardBg, borderColor: colors.subCardBorder }]}
+              onPress={toggleTheme}
+            >
+              <Ionicons 
+                name={themeMode === 'dark' ? 'sunny' : 'moon'} 
+                size={16} 
+                color={themeMode === 'dark' ? '#F59E0B' : '#6366F1'} 
+              />
+              <Text style={[styles.themeToggleText, { color: colors.textPrimary }]}>
+                {themeMode === 'dark' ? 'Light' : 'Dark'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={[styles.divider, { backgroundColor: colors.cardBorder }]} />
 
           {/* New Chat Button */}
           <TouchableOpacity 
             activeOpacity={0.8} 
-            style={styles.newChatBtn}
+            style={[styles.newChatBtn, { backgroundColor: colors.accent }]}
             onPress={startNewChat}
           >
-            <Text style={styles.newChatPlus}>+</Text>
+            <Feather name="plus" size={18} color="#FFFFFF" />
             <Text style={styles.newChatText}>Start New Chat</Text>
           </TouchableOpacity>
 
-          <Text style={styles.sectionHeader}>Recent Conversations</Text>
+          <Text style={[styles.sectionHeader, { color: colors.textMuted }]}>Recent Conversations</Text>
 
           {/* Chat History List */}
           <ScrollView style={styles.chatsList} showsVerticalScrollIndicator={false}>
             {conversations.length === 0 ? (
-              <Text style={styles.emptyChatsText}>No past conversations yet.</Text>
+              <Text style={[styles.emptyChatsText, { color: colors.textMuted }]}>No past conversations yet.</Text>
             ) : (
               conversations.map((conv) => {
                 const isActive = conv.id === activeConversationId;
                 return (
-                  <View key={conv.id} style={[styles.chatItemRow, isActive && styles.activeChatItem]}>
+                  <View 
+                    key={conv.id} 
+                    style={[
+                      styles.chatItemRow, 
+                      { backgroundColor: colors.subCardBg, borderColor: colors.subCardBorder },
+                      isActive && { borderColor: colors.accent, backgroundColor: colors.badgeBg }
+                    ]}
+                  >
                     <TouchableOpacity 
                       activeOpacity={0.7} 
                       style={styles.chatTitleArea}
                       onPress={() => selectConversation(conv.id)}
                     >
-                      <Text style={styles.chatIcon}>💬</Text>
+                      <Feather name="message-square" size={14} color={isActive ? colors.accent : colors.textSecondary} />
                       <Text 
-                        style={[styles.chatTitleText, isActive && styles.activeChatTitleText]} 
+                        style={[styles.chatTitleText, { color: colors.textSecondary }, isActive && { color: colors.textPrimary, fontWeight: '700' }]} 
                         numberOfLines={1}
                       >
                         {conv.title || 'Untitled Chat'}
@@ -116,7 +143,7 @@ export default function SidebarDrawer() {
                       style={styles.deleteBtn}
                       onPress={() => deleteConversation(conv.id)}
                     >
-                      <Text style={styles.deleteIcon}>🗑️</Text>
+                      <Feather name="trash-2" size={14} color={colors.textMuted} />
                     </TouchableOpacity>
                   </View>
                 );
@@ -125,9 +152,9 @@ export default function SidebarDrawer() {
           </ScrollView>
 
           {/* Footer Info */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Car Specialist AI v2.0</Text>
-            <Text style={styles.footerSub}>100% On-Device Engine</Text>
+          <View style={[styles.footer, { borderColor: colors.cardBorder }]}>
+            <Text style={[styles.footerText, { color: colors.textSecondary }]}>Car Specialist AI v2.0</Text>
+            <Text style={[styles.footerSub, { color: colors.textMuted }]}>100% On-Device Engine</Text>
           </View>
         </View>
       </View>
@@ -151,14 +178,12 @@ const styles = StyleSheet.create({
   drawer: {
     width: '80%',
     maxWidth: 320,
-    backgroundColor: '#1C1C1A', // Claude warm dark charcoal
     borderRightWidth: 1,
-    borderColor: '#383632',
     paddingHorizontal: 16,
     height: '100%',
     shadowColor: '#000',
     shadowOffset: { width: 4, height: 0 },
-    shadowOpacity: 0.5,
+    shadowOpacity: 0.3,
     shadowRadius: 10,
     elevation: 16,
   },
@@ -166,10 +191,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#141413',
     padding: 12,
     borderRadius: 14,
-    borderColor: '#2E2C28',
     borderWidth: 1,
     marginBottom: 10,
   },
@@ -177,7 +200,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#DA7756', // Terracotta accent
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -192,29 +214,45 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#ECECEC',
   },
   userEmail: {
     fontSize: 11,
-    color: '#9F9D96',
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
   },
   authBtn: {
-    backgroundColor: '#27272A',
-    borderColor: '#383632',
+    flex: 1,
     borderWidth: 1,
     borderRadius: 10,
     paddingVertical: 9,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    justifyContent: 'center',
+    gap: 6,
   },
   authBtnText: {
-    color: '#DA7756',
     fontSize: 12,
     fontWeight: '700',
   },
+  themeToggleBtn: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 9,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  themeToggleText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
   divider: {
     height: 1,
-    backgroundColor: '#2E2C28',
     marginBottom: 14,
   },
   newChatBtn: {
@@ -222,15 +260,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#DA7756',
     borderRadius: 12,
     paddingVertical: 12,
     marginBottom: 20,
-  },
-  newChatPlus: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '700',
   },
   newChatText: {
     color: '#FFFFFF',
@@ -240,7 +272,6 @@ const styles = StyleSheet.create({
   sectionHeader: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#9F9D96',
     marginBottom: 10,
     letterSpacing: 0.3,
     textTransform: 'uppercase',
@@ -250,7 +281,6 @@ const styles = StyleSheet.create({
   },
   emptyChatsText: {
     fontSize: 12,
-    color: '#71706B',
     textAlign: 'center',
     marginTop: 20,
   },
@@ -258,57 +288,36 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#141413',
-    borderColor: '#2E2C28',
     borderWidth: 1,
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 10,
     marginBottom: 8,
   },
-  activeChatItem: {
-    borderColor: '#DA7756',
-    backgroundColor: 'rgba(218, 119, 86, 0.12)',
-  },
   chatTitleArea: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
     marginRight: 8,
-  },
-  chatIcon: {
-    fontSize: 13,
   },
   chatTitleText: {
     fontSize: 13,
-    color: '#D1CFCA',
-    fontWeight: '500',
-  },
-  activeChatTitleText: {
-    color: '#ECECEC',
-    fontWeight: '700',
   },
   deleteBtn: {
     padding: 4,
   },
-  deleteIcon: {
-    fontSize: 13,
-  },
   footer: {
     paddingTop: 12,
     borderTopWidth: 1,
-    borderColor: '#2E2C28',
     alignItems: 'center',
   },
   footerText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#9F9D96',
   },
   footerSub: {
     fontSize: 10,
-    color: '#71706B',
     marginTop: 2,
   }
 });
