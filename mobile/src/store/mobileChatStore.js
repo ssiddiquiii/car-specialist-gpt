@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import LlamaService, { MODEL_CONFIG } from '../services/llamaService';
+import LlamaService, { MODEL_CONFIG, DOWNLOAD_STATES } from '../services/llamaService';
 
 const CHATS_STORAGE_KEY = '@car_specialist_chats_v2';
 const USER_STORAGE_KEY = '@car_specialist_user_v2';
@@ -10,6 +10,7 @@ export const useMobileChatStore = create((set, get) => ({
   isCheckingModel: true,
   isModelReady: false,
   isDownloading: false,
+  downloadState: DOWNLOAD_STATES.NOT_STARTED,
   downloadError: null,
   downloadProgress: { progressPercent: 0, writtenMB: '0', totalMB: '0' },
 
@@ -18,7 +19,7 @@ export const useMobileChatStore = create((set, get) => ({
   isAuthModalOpen: false,
 
   // Auth State
-  user: null, // { name: string, email: string } or null
+  user: null,
 
   // Chat State
   conversations: [],
@@ -142,26 +143,27 @@ export const useMobileChatStore = create((set, get) => ({
     });
   },
 
-  // Model Download
+  // Model Download Action
   startModelDownload: async () => {
-    set({ isDownloading: true, downloadError: null });
+    set({ isDownloading: true, downloadError: null, downloadState: DOWNLOAD_STATES.DOWNLOADING });
     try {
       await LlamaService.downloadModel((progress) => {
-        set({ downloadProgress: progress });
+        set({ downloadProgress: progress, downloadState: progress.state });
       });
 
       await LlamaService.initModel();
-      set({ isDownloading: false, isModelReady: true });
+      set({ isDownloading: false, isModelReady: true, downloadState: DOWNLOAD_STATES.COMPLETED });
     } catch (e) {
       console.error("[MobileChatStore] Download or init failed:", e);
       set({ 
         isDownloading: false, 
+        downloadState: DOWNLOAD_STATES.FAILED,
         downloadError: e.message || "Download failed. Please check internet connection and try again." 
       });
     }
   },
 
-  // Message Sending & Dual Response
+  // Optimized Single-Stream Primary Message Sending
   sendMessage: async (content) => {
     if (!content.trim()) return;
 
@@ -201,10 +203,10 @@ export const useMobileChatStore = create((set, get) => ({
 
     try {
       let pendingA = "";
-      let pendingB = "";
       let lastUpdate = Date.now();
 
-      await LlamaService.generateDualResponse(
+      // Generate Primary Response (Temp 0.3 Factual) immediately
+      await LlamaService.generatePrimaryResponse(
         [userMsg],
         (tokenA) => {
           pendingA += tokenA;
@@ -218,7 +220,52 @@ export const useMobileChatStore = create((set, get) => ({
             pendingA = "";
             lastUpdate = Date.now();
           }
-        },
+        }
+      );
+
+      // Flush remaining primary tokens & mark usable immediately!
+      set((state) => {
+        const finalContentA = state.dualResponse ? (state.dualResponse.response_a.content + pendingA) : '';
+        const aiMsg = { id: `ai_${Date.now()}`, role: 'assistant', content: finalContentA, timestamp: new Date().toISOString() };
+
+        const currentConvos = state.conversations.map((c) =>
+          c.id === convId ? { ...c, messages: [...(c.messages || []), aiMsg] } : c
+        );
+
+        get().saveConversationsToStorage(currentConvos);
+
+        return {
+          isTyping: false,
+          conversations: currentConvos,
+          dualResponse: state.dualResponse ? {
+            ...state.dualResponse,
+            response_a: { ...state.dualResponse.response_a, content: finalContentA },
+            streaming_complete: true
+          } : null
+        };
+      });
+    } catch (e) {
+      console.error("[MobileChatStore] Local generation failed:", e);
+      set({ isTyping: false });
+    }
+  },
+
+  // On-Demand Alternate Response (Temp 0.6 Creative)
+  generateAlternateResponse: async () => {
+    const { dualResponse, conversations, activeConversationId } = get();
+    if (!dualResponse) return;
+
+    set({ isTyping: true });
+
+    try {
+      let pendingB = "";
+      let lastUpdate = Date.now();
+
+      const currentConv = conversations.find(c => c.id === activeConversationId);
+      const userMsg = currentConv?.messages.find(m => m.role === 'user') || { role: 'user', content: dualResponse.prompt };
+
+      await LlamaService.generateAlternateResponse(
+        [userMsg],
         (tokenB) => {
           pendingB += tokenB;
           if (Date.now() - lastUpdate > 60) {
@@ -238,13 +285,12 @@ export const useMobileChatStore = create((set, get) => ({
         isTyping: false,
         dualResponse: state.dualResponse ? {
           ...state.dualResponse,
-          response_a: { ...state.dualResponse.response_a, content: state.dualResponse.response_a.content + pendingA },
           response_b: { ...state.dualResponse.response_b, content: state.dualResponse.response_b.content + pendingB },
           streaming_complete: true
         } : null
       }));
     } catch (e) {
-      console.error("[MobileChatStore] Local generation failed:", e);
+      console.error("[MobileChatStore] Alternate generation failed:", e);
       set({ isTyping: false });
     }
   },

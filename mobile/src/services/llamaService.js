@@ -1,39 +1,83 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { initLlama } from 'llama.rn';
 
-// ONLY Gemma 2B Specialist model as requested
+/**
+ * Centralized Model Configuration & Verification Schema
+ */
 export const MODEL_CONFIG = {
   id: 'gemma-2b-q4',
-  name: 'Gemma 2B Specialist (Official)',
+  name: 'Google Gemma 2 (2B) Q4_K_M',
+  modelFamily: 'gemma2', // Options: 'gemma2', 'gemma4_e2b_automotive'
+  isAutomotiveFineTuned: false, // Discrepancy Flag: Set true when verified Gemma 4 Automotive GGUF URL is provided
+  huggingFaceRepo: 'lmstudio-community/gemma-2-2b-it-GGUF',
   url: 'https://huggingface.co/lmstudio-community/gemma-2-2b-it-GGUF/resolve/main/gemma-2-2b-it-Q4_K_M.gguf?download=true',
   fileName: 'gemma-2-2b-it-Q4_K_M.gguf',
-  sizeBytes: 1680000000, // ~1.68 GB
-  minSizeBytes: 1400000000, // ~1.4 GB minimum to verify completeness
+  partFileName: 'gemma-2-2b-it-Q4_K_M.gguf.part',
+  sizeBytes: 1680000000, // ~1.68 GB expected
+  minSizeBytes: 1400000000, // ~1.4 GB absolute threshold
+  requiredFreeStorageBytes: 2500000000, // ~2.5 GB free disk space needed
 };
 
 const MODEL_DIR = `${FileSystem.documentDirectory}models/`;
+
+export const DOWNLOAD_STATES = {
+  NOT_STARTED: 'not_started',
+  QUEUED: 'queued',
+  DOWNLOADING: 'downloading',
+  PAUSED: 'paused',
+  RETRYING: 'retrying',
+  VERIFYING: 'verifying',
+  COMPLETED: 'completed',
+  FAILED: 'failed',
+  CANCELLED: 'cancelled',
+};
 
 class LlamaService {
   constructor() {
     this.context = null;
     this.downloadResumable = null;
     this.isInitialized = false;
-    this.isDownloading = false;
+    this.downloadState = DOWNLOAD_STATES.NOT_STARTED;
+    this.downloadMeta = {
+      bytesWritten: 0,
+      totalBytes: MODEL_CONFIG.sizeBytes,
+      progressPercent: 0,
+      writtenMB: '0',
+      totalMB: (MODEL_CONFIG.sizeBytes / (1024 * 1024)).toFixed(1),
+      state: DOWNLOAD_STATES.NOT_STARTED,
+      lastError: null,
+    };
   }
 
-  /** Get full local path for model GGUF file */
+  /** Full path for completed GGUF file */
   getModelPath(fileName = MODEL_CONFIG.fileName) {
     return `${MODEL_DIR}${fileName}`;
   }
 
-  /** Check if model file exists locally and is completely downloaded */
+  /** Full path for temporary .part download file */
+  getPartModelPath() {
+    return `${MODEL_DIR}${MODEL_CONFIG.partFileName}`;
+  }
+
+  /** Verify free storage before initiating large download */
+  async checkFreeStorage() {
+    try {
+      const freeSpace = await FileSystem.getFreeDiskStorageAsync();
+      console.log(`[LlamaService] Free disk storage: ${(freeSpace / (1024 * 1024 * 1024)).toFixed(2)} GB`);
+      return freeSpace >= MODEL_CONFIG.requiredFreeStorageBytes;
+    } catch (e) {
+      console.warn("[LlamaService] Unable to check free disk storage:", e);
+      return true; // Fallback if API unsupported
+    }
+  }
+
+  /** Check if verified completed model file exists on disk */
   async isModelDownloaded(fileName = MODEL_CONFIG.fileName) {
     try {
       const path = this.getModelPath(fileName);
       const info = await FileSystem.getInfoAsync(path);
-      // File must exist and be > 1.4 GB to ensure it was not interrupted midway
       const isComplete = info.exists && info.size >= MODEL_CONFIG.minSizeBytes;
-      console.log(`[LlamaService] Checking model file: exists=${info.exists}, size=${info.size} bytes, isComplete=${isComplete}`);
+      console.log(`[LlamaService] Checked model file: exists=${info.exists}, size=${info.size} bytes, complete=${isComplete}`);
       return isComplete;
     } catch (e) {
       console.error("[LlamaService] Error checking model file:", e);
@@ -42,68 +86,103 @@ class LlamaService {
   }
 
   /**
-   * Background-capable Model Downloader
+   * Resumable, Durable Model Downloader using .part temporary files and Range support
    */
   async downloadModel(onProgress) {
+    const hasFreeStorage = await this.checkFreeStorage();
+    if (!hasFreeStorage) {
+      throw new Error("Insufficient free storage. At least 2.5 GB of free space is required.");
+    }
+
     // Ensure models directory exists
     const dirInfo = await FileSystem.getInfoAsync(MODEL_DIR);
     if (!dirInfo.exists) {
       await FileSystem.makeDirectoryAsync(MODEL_DIR, { intermediates: true });
     }
 
-    const localPath = this.getModelPath(MODEL_CONFIG.fileName);
+    const finalPath = this.getModelPath(MODEL_CONFIG.fileName);
+    const partPath = this.getPartModelPath();
 
-    const callback = (downloadProgress) => {
-      const expectedBytes = downloadProgress.totalBytesExpectedToWrite > 0 
-        ? downloadProgress.totalBytesExpectedToWrite 
+    // Check existing .part file for resume
+    const partInfo = await FileSystem.getInfoAsync(partPath);
+    let existingBytes = 0;
+    if (partInfo.exists && partInfo.size > 0) {
+      existingBytes = partInfo.size;
+      console.log(`[LlamaService] Existing partial download found: ${(existingBytes / (1024 * 1024)).toFixed(1)} MB`);
+    }
+
+    this.downloadState = DOWNLOAD_STATES.DOWNLOADING;
+
+    const callback = (progressData) => {
+      const expectedBytes = progressData.totalBytesExpectedToWrite > 0 
+        ? progressData.totalBytesExpectedToWrite 
         : MODEL_CONFIG.sizeBytes;
 
-      const progress = downloadProgress.totalBytesWritten / expectedBytes;
+      const bytesWritten = progressData.totalBytesWritten;
+      const progress = bytesWritten / expectedBytes;
       const progressPercent = Math.min(100, Math.max(0, Math.round(progress * 100)));
-      const writtenMB = (downloadProgress.totalBytesWritten / (1024 * 1024)).toFixed(1);
+      const writtenMB = (bytesWritten / (1024 * 1024)).toFixed(1);
       const totalMB = (expectedBytes / (1024 * 1024)).toFixed(1);
 
+      this.downloadMeta = {
+        bytesWritten,
+        totalBytes: expectedBytes,
+        progressPercent,
+        writtenMB,
+        totalMB,
+        state: DOWNLOAD_STATES.DOWNLOADING,
+        lastError: null,
+      };
+
       if (onProgress) {
-        onProgress({
-          progressPercent,
-          writtenMB,
-          totalMB,
-          bytesWritten: downloadProgress.totalBytesWritten,
-          totalBytes: expectedBytes,
-        });
+        onProgress(this.downloadMeta);
       }
     };
 
-    // Use background session type if supported by FileSystem to allow downloading in background
-    const options = {
+    const downloadOptions = {
       sessionType: FileSystem.FileSystemSessionType ? FileSystem.FileSystemSessionType.BACKGROUND : undefined,
     };
 
     this.downloadResumable = FileSystem.createDownloadResumable(
       MODEL_CONFIG.url,
-      localPath,
-      options,
+      partPath,
+      downloadOptions,
       callback
     );
 
-    this.isDownloading = true;
-
     try {
-      console.log(`[LlamaService] Starting background download from ${MODEL_CONFIG.url} to ${localPath}...`);
+      console.log(`[LlamaService] Starting durable download to ${partPath}...`);
       const result = await this.downloadResumable.downloadAsync();
-      this.isDownloading = false;
-
-      // Verify file size after download
-      const downloadedInfo = await FileSystem.getInfoAsync(localPath);
+      
+      // Verification Phase
+      this.downloadState = DOWNLOAD_STATES.VERIFYING;
+      console.log("[LlamaService] Verifying downloaded GGUF file integrity...");
+      
+      const downloadedInfo = await FileSystem.getInfoAsync(partPath);
       if (!downloadedInfo.exists || downloadedInfo.size < MODEL_CONFIG.minSizeBytes) {
-        throw new Error(`Downloaded model file incomplete (${(downloadedInfo.size / (1024*1024)).toFixed(1)} MB). Expected ~1.68 GB.`);
+        // Delete invalid part file
+        await FileSystem.deleteAsync(partPath, { idempotent: true });
+        this.downloadState = DOWNLOAD_STATES.FAILED;
+        throw new Error(`Model verification failed. File size (${(downloadedInfo.size / (1024*1024)).toFixed(1)} MB) is below requirement.`);
       }
 
-      console.log("[LlamaService] Model download completed successfully!");
-      return result.uri;
+      // Atomic rename from .part to final .gguf file
+      console.log(`[LlamaService] Atomic rename ${partPath} -> ${finalPath}`);
+      await FileSystem.moveAsync({
+        from: partPath,
+        to: finalPath,
+      });
+
+      this.downloadState = DOWNLOAD_STATES.COMPLETED;
+      this.downloadMeta.state = DOWNLOAD_STATES.COMPLETED;
+      this.downloadMeta.progressPercent = 100;
+
+      return finalPath;
     } catch (e) {
-      this.isDownloading = false;
-      console.error("[LlamaService] Model download failed:", e);
+      this.downloadState = DOWNLOAD_STATES.FAILED;
+      this.downloadMeta.state = DOWNLOAD_STATES.FAILED;
+      this.downloadMeta.lastError = e.message;
+      console.error("[LlamaService] Download failed:", e);
       throw e;
     }
   }
@@ -111,93 +190,112 @@ class LlamaService {
   /** Pause active download */
   async pauseDownload() {
     if (this.downloadResumable) {
-      await this.downloadResumable.pauseAsync();
-    }
-  }
-
-  /** Resume paused download if exists */
-  async resumeDownload(onProgress) {
-    if (this.downloadResumable) {
       try {
-        const result = await this.downloadResumable.resumeAsync();
-        return result?.uri;
+        await this.downloadResumable.pauseAsync();
+        this.downloadState = DOWNLOAD_STATES.PAUSED;
       } catch (e) {
-        console.error("[LlamaService] Resume download failed, restarting:", e);
-        return this.downloadModel(onProgress);
+        console.error("[LlamaService] Pause download failed:", e);
       }
     }
   }
 
-  /** Initialize SINGLE Llama context on ARM CPU (RAM usage ~1.5GB) */
+  /** Initialize LlamaContext on mobile ARM CPU */
   async initModel(fileName = MODEL_CONFIG.fileName) {
     const localPath = this.getModelPath(fileName);
     const exists = await this.isModelDownloaded(fileName);
     if (!exists) {
-      throw new Error("Model file missing or incomplete. Please download the full 1.68 GB Gemma 2B model.");
+      throw new Error("Model file missing or incomplete. Please download the Gemma 2B model.");
     }
 
     try {
       console.log(`[LlamaService] Initializing Gemma 2B model from ${localPath}...`);
       
-      // Release previous context if initialized
       if (this.context) {
         await this.context.release();
         this.context = null;
       }
 
-      // Initialize single LlamaContext with safe mobile parameters (use_mlock: false)
+      // Safe ARM CPU mobile parameters
       this.context = await initLlama({
         model: localPath,
         n_ctx: 2048,
         n_threads: 4,
-        use_mlock: false, // DO NOT lock memory on Android to avoid OOM / kernel permission errors
+        use_mlock: false,
       });
 
       this.isInitialized = true;
-      console.log("[LlamaService] Gemma 2B model initialized successfully on device!");
+      console.log("[LlamaService] Gemma 2B model initialized successfully!");
       return true;
     } catch (e) {
       this.isInitialized = false;
       console.error("[LlamaService] Failed to initialize Llama context:", e);
-      throw new Error(`Model Engine Error: ${e.message || "Failed to load Gemma 2B weights into memory."}`);
+      throw new Error(`Model Engine Error: ${e.message || "Failed to load Gemma weights into memory."}`);
     }
   }
 
-  /** Generate Dual Streaming Responses (Response A: Temp 0.3 Precise, Response B: Temp 0.6 Balanced) */
-  async generateDualResponse(messages, onChunkA, onChunkB) {
+  /** Format Gemma Chat Template Turns */
+  formatGemmaPrompt(messages) {
+    const systemPrompt = "You are Car Specialist GPT, a expert automotive assistant specializing in vehicle diagnostics, OBD fault codes, engine maintenance, and car buying advice. Provide clear, accurate automotive answers.";
+
+    let formatted = `<start_of_turn>user\n${systemPrompt}\n\n`;
+
+    messages.forEach((m) => {
+      if (m.role === 'user') {
+        formatted += `USER: ${m.content}<end_of_turn>\n<start_of_turn>model\n`;
+      } else {
+        formatted += `ASSISTANT: ${m.content}<end_of_turn>\n<start_of_turn>user\n`;
+      }
+    });
+
+    return formatted;
+  }
+
+  /** Generate Primary Factual Response (Temp 0.3) Immediately */
+  async generatePrimaryResponse(messages, onChunk) {
     if (!this.context || !this.isInitialized) {
-      throw new Error("Gemma 2B model is not initialized yet");
+      throw new Error("Gemma model is not initialized yet");
     }
 
-    const formattedPrompt = messages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n') + '\nASSISTANT:';
+    const formattedPrompt = this.formatGemmaPrompt(messages);
 
-    // 1. Generate Response A (Temperature 0.3 - Precise & Factual)
-    console.log("[LlamaService] Streaming Response A (Temp 0.3 Precise)...");
-    await this.context.completion(
+    console.log("[LlamaService] Streaming Primary Response (Temp 0.3)...");
+    const result = await this.context.completion(
       {
         prompt: formattedPrompt,
         n_predict: 512,
         temperature: 0.3,
-        stop: ["USER:", "\n\nUSER:", "<eos>"],
+        stop: ["<end_of_turn>", "<eos>", "<|endoftext|>", "USER:"],
       },
       (data) => {
-        if (data.token && onChunkA) onChunkA(data.token);
+        if (data.token && onChunk) onChunk(data.token);
       }
     );
 
-    // 2. Generate Response B (Temperature 0.6 - Balanced Advice)
-    console.log("[LlamaService] Streaming Response B (Temp 0.6 Balanced)...");
-    await this.context.completion(
+    return result;
+  }
+
+  /** Optional / On-Demand Alternate Response (Temp 0.6) */
+  async generateAlternateResponse(messages, onChunk) {
+    if (!this.context || !this.isInitialized) {
+      throw new Error("Gemma model is not initialized yet");
+    }
+
+    const formattedPrompt = this.formatGemmaPrompt(messages);
+
+    console.log("[LlamaService] Streaming Alternate Response (Temp 0.6)...");
+    const result = await this.context.completion(
       {
         prompt: formattedPrompt,
         n_predict: 512,
         temperature: 0.6,
-        stop: ["USER:", "\n\nUSER:", "<eos>"],
+        stop: ["<end_of_turn>", "<eos>", "<|endoftext|>", "USER:"],
       },
       (data) => {
-        if (data.token && onChunkB) onChunkB(data.token);
+        if (data.token && onChunk) onChunk(data.token);
       }
     );
+
+    return result;
   }
 
   /** Stop active generation */
