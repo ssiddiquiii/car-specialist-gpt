@@ -6,7 +6,6 @@ import {
   TextInput, 
   TouchableOpacity, 
   ScrollView, 
-  Image, 
   Dimensions, 
   KeyboardAvoidingView, 
   Platform,
@@ -24,23 +23,54 @@ import { ChatSkeletonLoader } from './SkeletonLoader';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CAROUSEL_WIDTH = SCREEN_WIDTH - 32;
 
+const STARTER_PROMPTS = [
+  {
+    id: 'obd',
+    title: 'OBD-II Fault Check',
+    subtitle: 'Diagnose P0300 misfire code',
+    prompt: 'Explain diagnostic steps for OBD-II fault code P0300 (random cylinder misfire).',
+    icon: 'engine-outline',
+  },
+  {
+    id: 'repair',
+    title: 'Maintenance Guide',
+    subtitle: 'Brake pad replacement steps',
+    prompt: 'Provide a step-by-step DIY guide for replacing front brake pads and rotors safely.',
+    icon: 'wrench-outline',
+  },
+  {
+    id: 'compare',
+    title: 'Spec Comparison',
+    subtitle: 'Camry 2.5 vs Accord 1.5T',
+    prompt: 'Compare reliability, engine specs, and fuel economy: 2024 Toyota Camry 2.5 vs Honda Accord 1.5T.',
+    icon: 'car-shift-pattern',
+  },
+  {
+    id: 'valuation',
+    title: 'Buying Inspection',
+    subtitle: 'Used SUV under $10,000',
+    prompt: 'What critical items should I inspect when buying a used SUV under $10,000?',
+    icon: 'shield-check-outline',
+  },
+];
+
 export default function ChatScreen() {
   const insets = useSafeAreaInsets();
   const { colors, themeMode, toggleTheme } = useThemeStore();
   const [input, setInput] = useState('');
-  const [activeTab, setActiveTab] = useState(0); // 0 for A, 1 for B
+  const [activeTab, setActiveTab] = useState(0);
   const [inputHeight, setInputHeight] = useState(44);
   const scrollViewRef = useRef(null);
   const carouselRef = useRef(null);
 
-  // Pulse animation for header car emblem
+  // Subtle pulse animation for header emblem
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     const pulse = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.15, duration: 1000, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1.12, duration: 1200, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 1200, useNativeDriver: true }),
       ])
     );
     pulse.start();
@@ -60,16 +90,15 @@ export default function ChatScreen() {
 
   const currentConvo = conversations.find(c => c.id === activeConversationId) || { messages: [] };
 
-  // Auto-scroll chat list to bottom when messages update or dual response streams
   useEffect(() => {
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 100);
   }, [currentConvo.messages, dualResponse]);
 
-  const handleSend = () => {
-    if (!input.trim() || isTyping) return;
-    const text = input;
+  const handleSend = (overrideText) => {
+    const text = overrideText || input;
+    if (!text.trim() || isTyping) return;
     setInput('');
     setInputHeight(44);
     setActiveTab(0);
@@ -93,73 +122,101 @@ export default function ChatScreen() {
     <KeyboardAvoidingView 
       style={[styles.container, { backgroundColor: colors.background }]} 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
       <View style={[styles.innerContainer, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         
-        {/* Top Header */}
+        {/* Sleek Plot-Style Telemetry Header */}
         <View style={[styles.header, { backgroundColor: colors.headerBg, borderColor: colors.cardBorder }]}>
           <View style={styles.headerLeft}>
-            {/* Sidebar Hamburger Button */}
             <TouchableOpacity 
               activeOpacity={0.7} 
-              style={styles.hamburgerBtn} 
+              style={[styles.iconButton, { backgroundColor: colors.subCardBg, borderColor: colors.subCardBorder }]} 
               onPress={toggleSidebar}
             >
-              <Feather name="menu" size={22} color={colors.accent} />
+              <Feather name="menu" size={19} color={colors.textPrimary} />
             </TouchableOpacity>
 
             <View style={styles.headerTitleGroup}>
-              <Animated.View style={[styles.carIconBadge, { backgroundColor: colors.badgeBg, transform: [{ scale: pulseAnim }] }]}>
-                <Ionicons name="car-sport" size={18} color={colors.accent} />
+              <Animated.View style={[styles.brandBadge, { backgroundColor: colors.badgeBg, borderColor: colors.badgeBorder, transform: [{ scale: pulseAnim }] }]}>
+                <Ionicons name="car-sport" size={16} color={colors.accent} />
               </Animated.View>
               <View>
-                <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Car Specialist AI</Text>
-                <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>Offline AI Assistant</Text>
+                <View style={styles.titleRow}>
+                  <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Car Specialist</Text>
+                  <View style={[styles.gptChip, { backgroundColor: colors.telemetryCyanBg, borderColor: colors.telemetryCyanBorder }]}>
+                    <Text style={[styles.gptChipText, { color: colors.telemetryCyanText }]}>GPT</Text>
+                  </View>
+                </View>
+                <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>On-Device C++ Engine</Text>
               </View>
             </View>
           </View>
 
           <View style={styles.headerRight}>
-            <View style={[styles.offlineBadge, { backgroundColor: colors.offlineGreenBg, borderColor: colors.offlineGreenBorder }]}>
-              <View style={[styles.greenDot, { backgroundColor: colors.offlineGreenText }]} />
-              <Text style={[styles.badgeText, { color: colors.offlineGreenText }]}>OFFLINE ACTIVE</Text>
+            <View style={[styles.telemetryPill, { backgroundColor: colors.offlineGreenBg, borderColor: colors.offlineGreenBorder }]}>
+              <View style={[styles.greenPulseDot, { backgroundColor: colors.offlineGreenText }]} />
+              <Text style={[styles.telemetryPillText, { color: colors.offlineGreenText }]}>OFFLINE ACTIVE</Text>
             </View>
 
-            {/* Theme Toggle Button */}
             <TouchableOpacity 
               activeOpacity={0.7} 
-              style={[styles.themeBtn, { backgroundColor: colors.subCardBg, borderColor: colors.subCardBorder }]}
+              style={[styles.iconButton, { backgroundColor: colors.subCardBg, borderColor: colors.subCardBorder }]}
               onPress={toggleTheme}
             >
               <Ionicons 
                 name={themeMode === 'dark' ? 'sunny' : 'moon'} 
-                size={16} 
+                size={17} 
                 color={themeMode === 'dark' ? '#F59E0B' : '#6366F1'} 
               />
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Messages List */}
+        {/* Messages List & Empty State */}
         <ScrollView 
           ref={scrollViewRef}
           style={styles.chatList} 
           contentContainerStyle={styles.chatListContent}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
           {currentConvo.messages.length === 0 && !dualResponse && (
             <View style={styles.emptyContainer}>
-              <View style={[styles.emptyIconBg, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
+              
+              {/* Automotive Hero Branding */}
+              <View style={[styles.heroBadge, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
                 <Ionicons name="car-sport" size={32} color={colors.accent} />
+                <MaterialCommunityIcons name="sparkles" size={18} color={colors.accentCyan} style={styles.heroSparkle} />
               </View>
-              <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>Car Specialist AI Ready</Text>
-              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                Ask about vehicle diagnostics, OBD fault codes, engine specs, repair steps, or buying recommendations.
+
+              <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>Car Specialist GPT</Text>
+              <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+                On-device automotive intelligence. Ask about engine diagnostics, OBD codes, maintenance, or vehicle comparisons.
               </Text>
+
+              {/* Starter Telemetry Prompt Cards */}
+              <View style={styles.promptGrid}>
+                {STARTER_PROMPTS.map((item) => (
+                  <TouchableOpacity 
+                    key={item.id} 
+                    activeOpacity={0.7}
+                    style={[styles.promptCard, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}
+                    onPress={() => handleSend(item.prompt)}
+                  >
+                    <View style={styles.promptCardHeader}>
+                      <MaterialCommunityIcons name={item.icon} size={20} color={colors.accent} />
+                      <Feather name="arrow-up-right" size={14} color={colors.textMuted} />
+                    </View>
+                    <Text style={[styles.promptCardTitle, { color: colors.textPrimary }]}>{item.title}</Text>
+                    <Text style={[styles.promptCardSub, { color: colors.textSecondary }]} numberOfLines={1}>{item.subtitle}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
             </View>
           )}
 
+          {/* Messages */}
           {currentConvo.messages.map((msg) => (
             <View 
               key={msg.id} 
@@ -170,9 +227,19 @@ export default function ChatScreen() {
                   : [styles.aiBubble, { backgroundColor: colors.aiBubble, borderColor: colors.cardBorder }]
               ]}
             >
-              <Text style={[styles.roleLabel, msg.role === 'user' ? styles.userRole : [styles.aiRole, { color: colors.accent }]]}>
-                {msg.role === 'user' ? 'You' : 'Car Specialist AI'}
-              </Text>
+              <View style={styles.bubbleHeader}>
+                {msg.role === 'user' ? (
+                  <View style={styles.roleBadge}>
+                    <Feather name="user" size={12} color="#FFFFFF" />
+                    <Text style={styles.userRoleText}>You</Text>
+                  </View>
+                ) : (
+                  <View style={styles.roleBadge}>
+                    <Ionicons name="car-sport" size={13} color={colors.accentCyan} />
+                    <Text style={[styles.aiRoleText, { color: colors.accentCyan }]}>Car Specialist GPT</Text>
+                  </View>
+                )}
+              </View>
 
               {msg.role === 'user' ? (
                 <Text style={styles.userMessageText}>{msg.content}</Text>
@@ -189,13 +256,16 @@ export default function ChatScreen() {
             <ChatSkeletonLoader />
           )}
 
-          {/* ChatGPT / Claude Style Horizontal Swipeable Dual Response Carousel */}
+          {/* Dual Response Horizontal Swipeable Carousel */}
           {dualResponse && (
             <View style={[styles.dualCardContainer, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
               <View style={styles.dualHeaderRow}>
                 <View style={styles.dualTitleGroup}>
-                  <Text style={[styles.dualTitle, { color: colors.textPrimary }]}>Dual AI Answers</Text>
-                  <Text style={[styles.dualSubtitle, { color: colors.textSecondary }]}>Swipe left or right to compare options</Text>
+                  <View style={styles.dualTitleRow}>
+                    <MaterialCommunityIcons name="speedometer" size={16} color={colors.accent} />
+                    <Text style={[styles.dualTitle, { color: colors.textPrimary }]}>Dual Engine Responses</Text>
+                  </View>
+                  <Text style={[styles.dualSubtitle, { color: colors.textSecondary }]}>Swipe left or right to compare outputs</Text>
                 </View>
                 {isTyping && (
                   <TouchableOpacity activeOpacity={0.8} style={styles.stopBtn} onPress={stopGeneration}>
@@ -211,11 +281,11 @@ export default function ChatScreen() {
                   activeOpacity={0.8}
                   style={[
                     styles.tabButton, 
-                    activeTab === 0 && [styles.activeTabButton, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]
+                    activeTab === 0 && [styles.activeTabButton, { backgroundColor: colors.cardBg, borderColor: colors.accent }]
                   ]}
                   onPress={() => handleTabPress(0)}
                 >
-                  <Ionicons name="flash" size={13} color={activeTab === 0 ? colors.accent : colors.textMuted} />
+                  <Ionicons name="flash-outline" size={14} color={activeTab === 0 ? colors.accent : colors.textMuted} />
                   <Text style={[styles.tabButtonText, { color: colors.textMuted }, activeTab === 0 && { color: colors.accent, fontWeight: '700' }]}>
                     Direct & Factual
                   </Text>
@@ -225,18 +295,18 @@ export default function ChatScreen() {
                   activeOpacity={0.8}
                   style={[
                     styles.tabButton, 
-                    activeTab === 1 && [styles.activeTabButton, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]
+                    activeTab === 1 && [styles.activeTabButton, { backgroundColor: colors.cardBg, borderColor: colors.accentCyan }]
                   ]}
                   onPress={() => handleTabPress(1)}
                 >
-                  <Ionicons name="sparkles" size={13} color={activeTab === 1 ? colors.accent : colors.textMuted} />
-                  <Text style={[styles.tabButtonText, { color: colors.textMuted }, activeTab === 1 && { color: colors.accent, fontWeight: '700' }]}>
+                  <MaterialCommunityIcons name="sparkles-outline" size={14} color={activeTab === 1 ? colors.accentCyan : colors.textMuted} />
+                  <Text style={[styles.tabButtonText, { color: colors.textMuted }, activeTab === 1 && { color: colors.accentCyan, fontWeight: '700' }]}>
                     Detailed & Creative
                   </Text>
                 </TouchableOpacity>
               </View>
 
-              {/* Horizontal Swipeable Pager / Carousel */}
+              {/* Horizontal Swipeable Pager Carousel */}
               <ScrollView
                 ref={carouselRef}
                 horizontal
@@ -249,17 +319,13 @@ export default function ChatScreen() {
                 {/* Slide A */}
                 <View style={[styles.slideCard, { width: CAROUSEL_WIDTH - 28, backgroundColor: colors.subCardBg, borderColor: colors.subCardBorder }]}>
                   <View style={styles.slideHeader}>
-                    <Text style={[styles.slideTitle, { color: colors.textPrimary }]}>Option A — Direct & Precise</Text>
+                    <Text style={[styles.slideTitle, { color: colors.textPrimary }]}>Option A — Precise Factual</Text>
                     <View style={[styles.modeChip, { backgroundColor: colors.badgeBg, borderColor: colors.badgeBorder }]}>
-                      <Text style={[styles.modeChipText, { color: colors.badgeText }]}>Factual Mode</Text>
+                      <Text style={[styles.modeChipText, { color: colors.badgeText }]}>Temp 0.3</Text>
                     </View>
                   </View>
 
-                  <ScrollView 
-                    style={styles.slideScroll} 
-                    nestedScrollEnabled
-                    showsVerticalScrollIndicator={true}
-                  >
+                  <ScrollView style={styles.slideScroll} nestedScrollEnabled showsVerticalScrollIndicator={true}>
                     <Markdown style={getMarkdownStyles(colors)}>
                       {dualResponse.response_a.content || (isTyping ? 'Generating factual response...' : 'No response generated.')}
                     </Markdown>
@@ -272,7 +338,7 @@ export default function ChatScreen() {
                       onPress={() => chooseResponse('a')}
                     >
                       <Ionicons name="checkmark-circle" size={16} color="#FFFFFF" />
-                      <Text style={styles.chooseBtnText}>Use Option A</Text>
+                      <Text style={styles.chooseBtnText}>Select Option A</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -280,17 +346,13 @@ export default function ChatScreen() {
                 {/* Slide B */}
                 <View style={[styles.slideCard, { width: CAROUSEL_WIDTH - 28, backgroundColor: colors.subCardBg, borderColor: colors.subCardBorder }]}>
                   <View style={styles.slideHeader}>
-                    <Text style={[styles.slideTitle, { color: colors.textPrimary }]}>Option B — Detailed & Creative</Text>
-                    <View style={[styles.modeChip, { backgroundColor: colors.badgeBg, borderColor: colors.badgeBorder }]}>
-                      <Text style={[styles.modeChipText, { color: colors.badgeText }]}>Descriptive Mode</Text>
+                    <Text style={[styles.slideTitle, { color: colors.textPrimary }]}>Option B — Detailed Advice</Text>
+                    <View style={[styles.modeChip, { backgroundColor: colors.telemetryCyanBg, borderColor: colors.telemetryCyanBorder }]}>
+                      <Text style={[styles.modeChipText, { color: colors.telemetryCyanText }]}>Temp 0.6</Text>
                     </View>
                   </View>
 
-                  <ScrollView 
-                    style={styles.slideScroll} 
-                    nestedScrollEnabled
-                    showsVerticalScrollIndicator={true}
-                  >
+                  <ScrollView style={styles.slideScroll} nestedScrollEnabled showsVerticalScrollIndicator={true}>
                     <Markdown style={getMarkdownStyles(colors)}>
                       {dualResponse.response_b.content || (isTyping ? 'Generating descriptive response...' : 'No response generated.')}
                     </Markdown>
@@ -299,11 +361,11 @@ export default function ChatScreen() {
                   {dualResponse.streaming_complete && (
                     <TouchableOpacity 
                       activeOpacity={0.8} 
-                      style={[styles.chooseBtn, { backgroundColor: colors.accent }]} 
+                      style={[styles.chooseBtn, { backgroundColor: colors.accentCyan }]} 
                       onPress={() => chooseResponse('b')}
                     >
                       <Ionicons name="checkmark-circle" size={16} color="#FFFFFF" />
-                      <Text style={styles.chooseBtnText}>Use Option B</Text>
+                      <Text style={styles.chooseBtnText}>Select Option B</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -312,13 +374,13 @@ export default function ChatScreen() {
               {/* Page Indicator Dots */}
               <View style={styles.paginationDots}>
                 <View style={[styles.dot, { backgroundColor: colors.cardBorder }, activeTab === 0 && [styles.activeDot, { backgroundColor: colors.accent }]]} />
-                <View style={[styles.dot, { backgroundColor: colors.cardBorder }, activeTab === 1 && [styles.activeDot, { backgroundColor: colors.accent }]]} />
+                <View style={[styles.dot, { backgroundColor: colors.cardBorder }, activeTab === 1 && [styles.activeDot, { backgroundColor: colors.accentCyan }]]} />
               </View>
             </View>
           )}
         </ScrollView>
 
-        {/* Input Bar shiftable with Keyboard */}
+        {/* Ergonomic Floating Input Composer */}
         <View style={[styles.inputContainer, { backgroundColor: colors.headerBg, borderColor: colors.cardBorder }]}>
           <TextInput
             style={[
@@ -330,7 +392,7 @@ export default function ChatScreen() {
                 height: Math.min(100, Math.max(44, inputHeight)) 
               }
             ]}
-            placeholder="Ask about cars..."
+            placeholder="Ask about cars, OBD codes, or maintenance..."
             placeholderTextColor={colors.inputPlaceholder}
             value={input}
             onChangeText={setInput}
@@ -342,14 +404,14 @@ export default function ChatScreen() {
           <TouchableOpacity 
             activeOpacity={0.8} 
             style={[styles.sendBtn, { backgroundColor: colors.accent }, (!input.trim() || isTyping) && styles.disabledSendBtn]} 
-            onPress={handleSend} 
+            onPress={() => handleSend()} 
             disabled={!input.trim() || isTyping}
           >
-            <Ionicons name="send" size={18} color="#FFFFFF" />
+            <Ionicons name="send" size={17} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
 
-        {/* Modals & Drawers */}
+        {/* Drawers & Modals */}
         <SidebarDrawer />
         <AuthModal />
 
@@ -395,7 +457,7 @@ const getMarkdownStyles = (colors) => ({
   },
   code_inline: {
     backgroundColor: colors.subCardBg,
-    color: colors.accent,
+    color: colors.accentCyan,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -408,7 +470,7 @@ const getMarkdownStyles = (colors) => ({
     borderWidth: 1,
     borderRadius: 8,
     padding: 10,
-    color: colors.accent,
+    color: colors.accentCyan,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
     fontSize: 12,
     marginVertical: 6,
@@ -447,61 +509,76 @@ const styles = StyleSheet.create({
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
   },
-  hamburgerBtn: {
-    padding: 4,
+  iconButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitleGroup: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
   },
-  carIconBadge: {
+  brandBadge: {
     width: 34,
     height: 34,
-    borderRadius: 10,
+    borderRadius: 11,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   headerTitle: { 
-    fontSize: 16, 
+    fontSize: 15, 
     fontWeight: '700', 
-    letterSpacing: -0.2,
+    letterSpacing: -0.3,
+  },
+  gptChip: {
+    borderWidth: 1,
+    borderRadius: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  gptChipText: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   headerSubtitle: {
-    fontSize: 11,
+    fontSize: 10.5,
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
-  offlineBadge: { 
+  telemetryPill: { 
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
     borderWidth: 1,
     paddingHorizontal: 8, 
     paddingVertical: 4, 
     borderRadius: 12 
   },
-  greenDot: {
+  greenPulseDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
   },
-  badgeText: { 
-    fontSize: 9.5, 
+  telemetryPillText: { 
+    fontSize: 9, 
     fontWeight: '700', 
-  },
-  themeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    letterSpacing: 0.3,
   },
   chatList: { 
     flex: 1, 
@@ -512,35 +589,69 @@ const styles = StyleSheet.create({
   },
   emptyContainer: {
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 20,
+    paddingVertical: 20,
   },
-  emptyIconBg: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
+  heroBadge: {
+    width: 68,
+    height: 68,
+    borderRadius: 22,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 14,
+    position: 'relative',
+  },
+  heroSparkle: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
   },
   emptyTitle: {
-    fontSize: 17,
+    fontSize: 19,
     fontWeight: '700',
     marginBottom: 6,
+    letterSpacing: -0.3,
   },
-  emptyText: {
+  emptySubtitle: {
     fontSize: 13,
     textAlign: 'center',
     lineHeight: 19,
+    maxWidth: 320,
+    marginBottom: 24,
+  },
+  promptGrid: {
+    width: '100%',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    justifyContent: 'space-between',
+  },
+  promptCard: {
+    width: '48%',
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 12,
+  },
+  promptCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  promptCardTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  promptCardSub: {
+    fontSize: 11,
   },
   messageBubble: { 
     borderRadius: 18, 
     paddingHorizontal: 16,
     paddingVertical: 12,
     marginBottom: 14, 
-    maxWidth: '85%'
+    maxWidth: '88%'
   },
   userBubble: { 
     alignSelf: 'flex-end' 
@@ -549,15 +660,23 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start', 
     borderWidth: 1 
   },
-  roleLabel: { 
-    fontSize: 11, 
-    fontWeight: '700', 
-    marginBottom: 4 
+  bubbleHeader: {
+    marginBottom: 6,
   },
-  userRole: {
-    color: 'rgba(255, 255, 255, 0.9)',
+  roleBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
-  aiRole: {},
+  userRoleText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  aiRoleText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
   userMessageText: {
     color: '#FFFFFF',
     fontSize: 14,
@@ -576,16 +695,24 @@ const styles = StyleSheet.create({
     marginBottom: 12 
   },
   dualTitleGroup: {},
+  dualTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   dualTitle: { 
     fontSize: 14, 
     fontWeight: '700', 
   },
   dualSubtitle: {
     fontSize: 11,
+    marginTop: 2,
   },
   stopBtn: { 
-    backgroundColor: '#991B1B', 
-    paddingHorizontal: 12, 
+    backgroundColor: '#3B1717', 
+    borderColor: '#991B1B',
+    borderWidth: 1,
+    paddingHorizontal: 10, 
     paddingVertical: 5, 
     borderRadius: 10,
     flexDirection: 'row',
@@ -643,8 +770,8 @@ const styles = StyleSheet.create({
   },
   modeChip: {
     borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
     borderRadius: 6,
   },
   modeChipText: {
@@ -663,9 +790,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
   },
   chooseBtnText: { 
     color: '#FFFFFF', 

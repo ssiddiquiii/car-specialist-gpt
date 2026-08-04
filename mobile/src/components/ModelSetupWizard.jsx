@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Image, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons, Feather } from '@expo/vector-icons';
+import { Ionicons, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useMobileChatStore } from '../store/mobileChatStore';
 import { useThemeStore } from '../store/themeStore';
 
@@ -33,19 +33,39 @@ export default function ModelSetupWizard() {
         showsVerticalScrollIndicator={false}
       >
         <View style={[styles.card, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
-          {/* Realistic App Icon */}
-          <View style={[styles.iconWrapper, { borderColor: colors.cardBorder }]}>
+          
+          {/* App Brand Icon Wrapper */}
+          <View style={[styles.iconWrapper, { borderColor: colors.accentCyan }]}>
             <Image 
               source={require('../../assets/icon.png')} 
               style={styles.appIcon} 
               resizeMode="cover"
             />
+            <MaterialCommunityIcons name="shield-check" size={20} color={colors.accentCyan} style={styles.iconShieldBadge} />
           </View>
 
-          <Text style={[styles.title, { color: colors.textPrimary }]}>Car Specialist AI Setup</Text>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>Car Specialist GPT</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            Your personal automotive assistant. Works 100% offline on your phone without internet.
+            On-device automotive intelligence. Executes 100% offline on your phone without internet or cloud billing.
           </Text>
+
+          {/* Telemetry Specs Grid */}
+          <View style={[styles.specsGrid, { backgroundColor: colors.subCardBg, borderColor: colors.subCardBorder }]}>
+            <View style={styles.specItem}>
+              <Text style={[styles.specValue, { color: colors.accentCyan }]}>Gemma 2B</Text>
+              <Text style={[styles.specLabel, { color: colors.textMuted }]}>AI Model</Text>
+            </View>
+            <View style={[styles.specDivider, { backgroundColor: colors.subCardBorder }]} />
+            <View style={styles.specItem}>
+              <Text style={[styles.specValue, { color: colors.textPrimary }]}>1.68 GB</Text>
+              <Text style={[styles.specLabel, { color: colors.textMuted }]}>Storage</Text>
+            </View>
+            <View style={[styles.specDivider, { backgroundColor: colors.subCardBorder }]} />
+            <View style={styles.specItem}>
+              <Text style={[styles.specValue, { color: colors.offlineGreenText }]}>1.5 GB</Text>
+              <Text style={[styles.specLabel, { color: colors.textMuted }]}>RAM Footprint</Text>
+            </View>
+          </View>
 
           {downloadError && (
             <View style={styles.errorBox}>
@@ -58,44 +78,36 @@ export default function ModelSetupWizard() {
 
           {!isDownloading ? (
             <View style={styles.singleOptionContainer}>
-              <View style={[styles.modelDetailCard, { backgroundColor: colors.subCardBg, borderColor: colors.subCardBorder }]}>
-                <View style={styles.modelHeader}>
-                  <Text style={[styles.modelName, { color: colors.textPrimary }]}>Offline AI Engine</Text>
-                  <View style={[styles.badge, { backgroundColor: colors.badgeBg, borderColor: colors.badgeBorder }]}>
-                    <Text style={[styles.badgeText, { color: colors.badgeText }]}>1.68 GB</Text>
-                  </View>
-                </View>
-                <Text style={[styles.modelDesc, { color: colors.textSecondary }]}>
-                  Downloads once onto your device so you can diagnose car issues and get advice anywhere without Wi-Fi.
-                </Text>
-              </View>
-
               <TouchableOpacity 
-                activeOpacity={0.8}
+                activeOpacity={0.85}
                 style={[styles.downloadBtn, { backgroundColor: colors.accent }]}
                 onPress={() => startModelDownload()}
               >
                 <Feather name="download" size={18} color="#FFFFFF" />
-                <Text style={styles.downloadBtnText}>Download AI Engine (1.68 GB)</Text>
+                <Text style={styles.downloadBtnText}>Initialize AI Engine (1.68 GB)</Text>
               </TouchableOpacity>
+
+              <Text style={[styles.footerNotice, { color: colors.textMuted }]}>
+                Downloads once via HTTPS CDN and saves to secure local storage.
+              </Text>
             </View>
           ) : (
             <View style={styles.progressBox}>
-              <ActivityIndicator size="large" color={colors.accent} />
+              <ActivityIndicator size="large" color={colors.accentCyan} />
               <Text style={[styles.progressTitle, { color: colors.textPrimary }]}>Downloading AI Engine...</Text>
-              <Text style={[styles.progressPercent, { color: colors.accent }]}>{downloadProgress.progressPercent}%</Text>
+              <Text style={[styles.progressPercent, { color: colors.accentCyan }]}>{downloadProgress.progressPercent}%</Text>
 
               <View style={[styles.progressBarBg, { backgroundColor: colors.subCardBg }]}>
-                <View style={[styles.progressBarFill, { width: `${downloadProgress.progressPercent}%`, backgroundColor: colors.accent }]} />
+                <View style={[styles.progressBarFill, { width: `${downloadProgress.progressPercent}%`, backgroundColor: colors.accentCyan }]} />
               </View>
 
               <Text style={[styles.progressDetails, { color: colors.textSecondary }]}>
                 {downloadProgress.writtenMB} MB / {downloadProgress.totalMB} MB
               </Text>
               
-              <View style={[styles.infoBadgeContainer, { backgroundColor: colors.badgeBg, borderColor: colors.badgeBorder }]}>
-                <Text style={[styles.notice, { color: colors.badgeText }]}>
-                  <Feather name="zap" size={13} color={colors.badgeText} /> Background download supported. You can switch apps or use your phone while downloading.
+              <View style={[styles.infoBadgeContainer, { backgroundColor: colors.telemetryCyanBg, borderColor: colors.telemetryCyanBorder }]}>
+                <Text style={[styles.notice, { color: colors.telemetryCyanText }]}>
+                  <Feather name="zap" size={13} color={colors.telemetryCyanText} /> Background download active. You can switch apps or lock screen while downloading.
                 </Text>
               </View>
             </View>
@@ -117,7 +129,7 @@ const styles = StyleSheet.create({
   themeBtn: {
     width: 38,
     height: 38,
-    borderRadius: 19,
+    borderRadius: 12,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -137,67 +149,75 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.2,
     shadowRadius: 20,
     elevation: 8,
   },
   iconWrapper: {
-    width: 88,
-    height: 88,
-    borderRadius: 22,
-    overflow: 'hidden',
+    width: 90,
+    height: 90,
+    borderRadius: 24,
+    overflow: 'visible',
     marginBottom: 20,
-    borderWidth: 1.5,
+    borderWidth: 2,
+    position: 'relative',
   },
   appIcon: {
     width: '100%',
     height: '100%',
+    borderRadius: 22,
+  },
+  iconShieldBadge: {
+    position: 'absolute',
+    bottom: -6,
+    right: -6,
+    backgroundColor: '#090D16',
+    borderRadius: 10,
+    padding: 2,
   },
   title: { 
     fontSize: 23, 
     fontWeight: '700', 
     textAlign: 'center', 
     marginBottom: 8,
-    letterSpacing: -0.3,
+    letterSpacing: -0.4,
   },
   subtitle: { 
     fontSize: 13.5, 
     textAlign: 'center', 
-    marginBottom: 26, 
-    lineHeight: 20 
+    marginBottom: 22, 
+    lineHeight: 20,
+    maxWidth: 340,
+  },
+  specsGrid: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    width: '100%',
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 10,
+    marginBottom: 24,
+  },
+  specItem: {
+    alignItems: 'center',
+  },
+  specValue: {
+    fontSize: 14,
+    fontWeight: '800',
+    marginBottom: 2,
+  },
+  specLabel: {
+    fontSize: 11,
+  },
+  specDivider: {
+    width: 1,
+    height: 24,
   },
   singleOptionContainer: { 
     width: '100%', 
-    gap: 16 
-  },
-  modelDetailCard: {
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 16,
-  },
-  modelHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  modelName: { 
-    fontSize: 15, 
-    fontWeight: '700', 
-  },
-  badge: {
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-  },
-  badgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  modelDesc: { 
-    fontSize: 12.5, 
-    lineHeight: 18 
+    gap: 12 
   },
   downloadBtn: {
     borderRadius: 14,
@@ -213,6 +233,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     letterSpacing: 0.2,
+  },
+  footerNotice: {
+    fontSize: 11,
+    textAlign: 'center',
+    lineHeight: 16,
   },
   progressBox: { 
     width: '100%', 
