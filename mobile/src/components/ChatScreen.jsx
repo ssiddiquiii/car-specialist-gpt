@@ -8,8 +8,7 @@ import {
   ScrollView, 
   Dimensions, 
   KeyboardAvoidingView, 
-  Platform,
-  Animated
+  Platform
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Markdown from 'react-native-markdown-display';
@@ -21,35 +20,38 @@ import AuthModal from './AuthModal';
 import { ChatSkeletonLoader } from './SkeletonLoader';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CAROUSEL_WIDTH = SCREEN_WIDTH - 32;
+// Calculate exact slide width to avoid any side card clipping/cut-off
+const PADDING_HORIZONTAL = 16;
+const CAROUSEL_CONTAINER_WIDTH = SCREEN_WIDTH - (PADDING_HORIZONTAL * 2);
+const SLIDE_WIDTH = CAROUSEL_CONTAINER_WIDTH - 28;
 
 const STARTER_PROMPTS = [
   {
     id: 'obd',
-    title: 'OBD-II Fault Check',
-    subtitle: 'Diagnose P0300 misfire code',
-    prompt: 'Explain diagnostic steps for OBD-II fault code P0300 (random cylinder misfire).',
+    title: 'Check Engine Light',
+    subtitle: 'Diagnose misfire code P0300',
+    prompt: 'Explain what causes OBD fault code P0300 and how to fix it.',
     icon: 'engine-outline',
   },
   {
     id: 'repair',
     title: 'Maintenance Guide',
     subtitle: 'Brake pad replacement steps',
-    prompt: 'Provide a step-by-step DIY guide for replacing front brake pads and rotors safely.',
+    prompt: 'Provide a simple step-by-step guide for replacing brake pads.',
     icon: 'wrench-outline',
   },
   {
     id: 'compare',
-    title: 'Spec Comparison',
-    subtitle: 'Camry 2.5 vs Accord 1.5T',
-    prompt: 'Compare reliability, engine specs, and fuel economy: 2024 Toyota Camry 2.5 vs Honda Accord 1.5T.',
+    title: 'Car Comparison',
+    subtitle: 'Toyota Camry vs Honda Accord',
+    prompt: 'Compare reliability, mileage, and features: Toyota Camry vs Honda Accord.',
     icon: 'car-shift-pattern',
   },
   {
     id: 'valuation',
-    title: 'Buying Inspection',
-    subtitle: 'Used SUV under $10,000',
-    prompt: 'What critical items should I inspect when buying a used SUV under $10,000?',
+    title: 'Used Car Checklist',
+    subtitle: 'Buying advice under $10,000',
+    prompt: 'What critical items should I inspect when buying a used car under $10,000?',
     icon: 'shield-check-outline',
   },
 ];
@@ -62,20 +64,6 @@ export default function ChatScreen() {
   const [inputHeight, setInputHeight] = useState(44);
   const scrollViewRef = useRef(null);
   const carouselRef = useRef(null);
-
-  // Subtle pulse animation for header emblem
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    const pulse = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.12, duration: 1200, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1, duration: 1200, useNativeDriver: true }),
-      ])
-    );
-    pulse.start();
-    return () => pulse.stop();
-  }, [pulseAnim]);
 
   const { 
     conversations, 
@@ -107,12 +95,12 @@ export default function ChatScreen() {
 
   const handleTabPress = (index) => {
     setActiveTab(index);
-    carouselRef.current?.scrollTo({ x: index * CAROUSEL_WIDTH, animated: true });
+    carouselRef.current?.scrollTo({ x: index * (SLIDE_WIDTH + 10), animated: true });
   };
 
   const handleScroll = (event) => {
     const offsetX = event.nativeEvent.contentOffset.x;
-    const index = Math.round(offsetX / CAROUSEL_WIDTH);
+    const index = Math.round(offsetX / (SLIDE_WIDTH + 10));
     if (index !== activeTab && (index === 0 || index === 1)) {
       setActiveTab(index);
     }
@@ -125,51 +113,31 @@ export default function ChatScreen() {
     >
       <View style={[styles.innerContainer, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         
-        {/* Sleek Plot-Style Telemetry Header */}
+        {/* 1. CLEAN SIMPLE HEADER: "Chat with Car AI" */}
         <View style={[styles.header, { backgroundColor: colors.headerBg, borderColor: colors.cardBorder }]}>
-          <View style={styles.headerLeft}>
-            <TouchableOpacity 
-              activeOpacity={0.7} 
-              style={[styles.iconButton, { backgroundColor: colors.subCardBg, borderColor: colors.subCardBorder }]} 
-              onPress={toggleSidebar}
-            >
-              <Feather name="menu" size={19} color={colors.textPrimary} />
-            </TouchableOpacity>
+          <TouchableOpacity 
+            activeOpacity={0.7} 
+            style={[styles.iconButton, { backgroundColor: colors.subCardBg, borderColor: colors.subCardBorder }]} 
+            onPress={toggleSidebar}
+          >
+            <Feather name="menu" size={19} color={colors.textPrimary} />
+          </TouchableOpacity>
 
-            <View style={styles.headerTitleGroup}>
-              <Animated.View style={[styles.brandBadge, { backgroundColor: colors.badgeBg, borderColor: colors.badgeBorder, transform: [{ scale: pulseAnim }] }]}>
-                <Ionicons name="car-sport" size={16} color={colors.accent} />
-              </Animated.View>
-              <View>
-                <View style={styles.titleRow}>
-                  <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Car Specialist</Text>
-                  <View style={[styles.gptChip, { backgroundColor: colors.telemetryCyanBg, borderColor: colors.telemetryCyanBorder }]}>
-                    <Text style={[styles.gptChipText, { color: colors.telemetryCyanText }]}>GPT</Text>
-                  </View>
-                </View>
-                <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>On-Device C++ Engine</Text>
-              </View>
-            </View>
-          </View>
+          {/* Clean Central Title */}
+          <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Chat with Car AI</Text>
 
-          <View style={styles.headerRight}>
-            <View style={[styles.telemetryPill, { backgroundColor: colors.offlineGreenBg, borderColor: colors.offlineGreenBorder }]}>
-              <View style={[styles.greenPulseDot, { backgroundColor: colors.offlineGreenText }]} />
-              <Text style={[styles.telemetryPillText, { color: colors.offlineGreenText }]}>OFFLINE ACTIVE</Text>
-            </View>
-
-            <TouchableOpacity 
-              activeOpacity={0.7} 
-              style={[styles.iconButton, { backgroundColor: colors.subCardBg, borderColor: colors.subCardBorder }]}
-              onPress={toggleTheme}
-            >
-              <Ionicons 
-                name={themeMode === 'dark' ? 'sunny' : 'moon'} 
-                size={17} 
-                color={themeMode === 'dark' ? '#F59E0B' : '#6366F1'} 
-              />
-            </TouchableOpacity>
-          </View>
+          {/* Theme Switcher Button */}
+          <TouchableOpacity 
+            activeOpacity={0.7} 
+            style={[styles.iconButton, { backgroundColor: colors.subCardBg, borderColor: colors.subCardBorder }]}
+            onPress={toggleTheme}
+          >
+            <Ionicons 
+              name={themeMode === 'dark' ? 'sunny' : 'moon'} 
+              size={17} 
+              color={themeMode === 'dark' ? '#F59E0B' : '#6366F1'} 
+            />
+          </TouchableOpacity>
         </View>
 
         {/* Messages List & Empty State */}
@@ -182,19 +150,16 @@ export default function ChatScreen() {
         >
           {currentConvo.messages.length === 0 && !dualResponse && (
             <View style={styles.emptyContainer}>
-              
-              {/* Automotive Hero Branding */}
               <View style={[styles.heroBadge, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
                 <Ionicons name="car-sport" size={32} color={colors.accent} />
-                <MaterialCommunityIcons name="sparkles" size={18} color={colors.accentCyan} style={styles.heroSparkle} />
               </View>
 
-              <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>Car Specialist GPT</Text>
+              <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>Car AI Assistant</Text>
               <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-                On-device automotive intelligence. Ask about engine diagnostics, OBD codes, maintenance, or vehicle comparisons.
+                Ask any question about cars, diagnostic codes, repairs, or buying advice.
               </Text>
 
-              {/* Starter Telemetry Prompt Cards */}
+              {/* Starter Prompt Cards */}
               <View style={styles.promptGrid}>
                 {STARTER_PROMPTS.map((item) => (
                   <TouchableOpacity 
@@ -236,7 +201,7 @@ export default function ChatScreen() {
                 ) : (
                   <View style={styles.roleBadge}>
                     <Ionicons name="car-sport" size={13} color={colors.accentCyan} />
-                    <Text style={[styles.aiRoleText, { color: colors.accentCyan }]}>Car Specialist GPT</Text>
+                    <Text style={[styles.aiRoleText, { color: colors.accentCyan }]}>Car AI</Text>
                   </View>
                 )}
               </View>
@@ -251,25 +216,24 @@ export default function ChatScreen() {
             </View>
           ))}
 
-          {/* Dual Response Streaming & Skeleton Placeholder */}
+          {/* Loading Skeleton */}
           {isTyping && !dualResponse?.response_a.content && (
             <ChatSkeletonLoader />
           )}
 
-          {/* Dual Response Horizontal Swipeable Carousel */}
+          {/* Dual AI Answers Pager Carousel (FIXED BOX CUT-OFF & STOP ICON) */}
           {dualResponse && (
             <View style={[styles.dualCardContainer, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
               <View style={styles.dualHeaderRow}>
                 <View style={styles.dualTitleGroup}>
-                  <View style={styles.dualTitleRow}>
-                    <MaterialCommunityIcons name="speedometer" size={16} color={colors.accent} />
-                    <Text style={[styles.dualTitle, { color: colors.textPrimary }]}>Dual Engine Responses</Text>
-                  </View>
-                  <Text style={[styles.dualSubtitle, { color: colors.textSecondary }]}>Swipe left or right to compare outputs</Text>
+                  <Text style={[styles.dualTitle, { color: colors.textPrimary }]}>Dual AI Answers</Text>
+                  <Text style={[styles.dualSubtitle, { color: colors.textSecondary }]}>Swipe left or right to compare options</Text>
                 </View>
+
+                {/* 3. FIXED STOP BUTTON WITH CRISP VECTOR ICON */}
                 {isTyping && (
                   <TouchableOpacity activeOpacity={0.8} style={styles.stopBtn} onPress={stopGeneration}>
-                    <Feather name="square" size={12} color="#FCA5A5" />
+                    <Ionicons name="stop-circle" size={15} color="#FCA5A5" />
                     <Text style={styles.stopText}>Stop</Text>
                   </TouchableOpacity>
                 )}
@@ -287,7 +251,7 @@ export default function ChatScreen() {
                 >
                   <Ionicons name="flash-outline" size={14} color={activeTab === 0 ? colors.accent : colors.textMuted} />
                   <Text style={[styles.tabButtonText, { color: colors.textMuted }, activeTab === 0 && { color: colors.accent, fontWeight: '700' }]}>
-                    Direct & Factual
+                    Factual Mode
                   </Text>
                 </TouchableOpacity>
 
@@ -301,27 +265,29 @@ export default function ChatScreen() {
                 >
                   <MaterialCommunityIcons name="sparkles-outline" size={14} color={activeTab === 1 ? colors.accentCyan : colors.textMuted} />
                   <Text style={[styles.tabButtonText, { color: colors.textMuted }, activeTab === 1 && { color: colors.accentCyan, fontWeight: '700' }]}>
-                    Detailed & Creative
+                    Descriptive Mode
                   </Text>
                 </TouchableOpacity>
               </View>
 
-              {/* Horizontal Swipeable Pager Carousel */}
+              {/* 2. FIXED HORIZONTAL CAROUSEL (ZERO CUT-OFF) */}
               <ScrollView
                 ref={carouselRef}
                 horizontal
-                pagingEnabled
+                pagingEnabled={false}
+                snapToInterval={SLIDE_WIDTH + 10}
+                decelerationRate="fast"
                 showsHorizontalScrollIndicator={false}
                 onScroll={handleScroll}
                 scrollEventThrottle={16}
-                style={styles.carouselScrollView}
+                contentContainerStyle={styles.carouselContentContainer}
               >
                 {/* Slide A */}
-                <View style={[styles.slideCard, { width: CAROUSEL_WIDTH - 28, backgroundColor: colors.subCardBg, borderColor: colors.subCardBorder }]}>
+                <View style={[styles.slideCard, { width: SLIDE_WIDTH, backgroundColor: colors.subCardBg, borderColor: colors.subCardBorder }]}>
                   <View style={styles.slideHeader}>
-                    <Text style={[styles.slideTitle, { color: colors.textPrimary }]}>Option A — Precise Factual</Text>
+                    <Text style={[styles.slideTitle, { color: colors.textPrimary }]}>Option A — Factual Answer</Text>
                     <View style={[styles.modeChip, { backgroundColor: colors.badgeBg, borderColor: colors.badgeBorder }]}>
-                      <Text style={[styles.modeChipText, { color: colors.badgeText }]}>Temp 0.3</Text>
+                      <Text style={[styles.modeChipText, { color: colors.badgeText }]}>Factual</Text>
                     </View>
                   </View>
 
@@ -344,11 +310,11 @@ export default function ChatScreen() {
                 </View>
 
                 {/* Slide B */}
-                <View style={[styles.slideCard, { width: CAROUSEL_WIDTH - 28, backgroundColor: colors.subCardBg, borderColor: colors.subCardBorder }]}>
+                <View style={[styles.slideCard, { width: SLIDE_WIDTH, backgroundColor: colors.subCardBg, borderColor: colors.subCardBorder }]}>
                   <View style={styles.slideHeader}>
-                    <Text style={[styles.slideTitle, { color: colors.textPrimary }]}>Option B — Detailed Advice</Text>
+                    <Text style={[styles.slideTitle, { color: colors.textPrimary }]}>Option B — Descriptive Advice</Text>
                     <View style={[styles.modeChip, { backgroundColor: colors.telemetryCyanBg, borderColor: colors.telemetryCyanBorder }]}>
-                      <Text style={[styles.modeChipText, { color: colors.telemetryCyanText }]}>Temp 0.6</Text>
+                      <Text style={[styles.modeChipText, { color: colors.telemetryCyanText }]}>Descriptive</Text>
                     </View>
                   </View>
 
@@ -371,7 +337,7 @@ export default function ChatScreen() {
                 </View>
               </ScrollView>
 
-              {/* Page Indicator Dots */}
+              {/* Page Dots */}
               <View style={styles.paginationDots}>
                 <View style={[styles.dot, { backgroundColor: colors.cardBorder }, activeTab === 0 && [styles.activeDot, { backgroundColor: colors.accent }]]} />
                 <View style={[styles.dot, { backgroundColor: colors.cardBorder }, activeTab === 1 && [styles.activeDot, { backgroundColor: colors.accentCyan }]]} />
@@ -380,7 +346,7 @@ export default function ChatScreen() {
           )}
         </ScrollView>
 
-        {/* Ergonomic Floating Input Composer */}
+        {/* 4. EXACT INPUT PLACEHOLDER: "Ask about car specs" */}
         <View style={[styles.inputContainer, { backgroundColor: colors.headerBg, borderColor: colors.cardBorder }]}>
           <TextInput
             style={[
@@ -392,7 +358,7 @@ export default function ChatScreen() {
                 height: Math.min(100, Math.max(44, inputHeight)) 
               }
             ]}
-            placeholder="Ask about cars, OBD codes, or maintenance..."
+            placeholder="Ask about car specs"
             placeholderTextColor={colors.inputPlaceholder}
             value={input}
             onChangeText={setInput}
@@ -435,21 +401,21 @@ const getMarkdownStyles = (colors) => ({
     color: colors.textSecondary,
   },
   heading1: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '700',
     color: colors.accent,
     marginTop: 8,
     marginBottom: 4,
   },
   heading2: {
-    fontSize: 15,
+    fontSize: 14.5,
     fontWeight: '700',
     color: colors.textPrimary,
     marginTop: 6,
     marginBottom: 4,
   },
   heading3: {
-    fontSize: 14,
+    fontSize: 13.5,
     fontWeight: '700',
     color: colors.textPrimary,
     marginTop: 4,
@@ -506,11 +472,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
   iconButton: {
     width: 36,
     height: 36,
@@ -519,66 +480,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerTitleGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  brandBadge: {
-    width: 34,
-    height: 34,
-    borderRadius: 11,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
   headerTitle: { 
-    fontSize: 15, 
+    fontSize: 16, 
     fontWeight: '700', 
-    letterSpacing: -0.3,
-  },
-  gptChip: {
-    borderWidth: 1,
-    borderRadius: 6,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-  },
-  gptChipText: {
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  headerSubtitle: {
-    fontSize: 10.5,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  telemetryPill: { 
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    borderWidth: 1,
-    paddingHorizontal: 8, 
-    paddingVertical: 4, 
-    borderRadius: 12 
-  },
-  greenPulseDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  telemetryPillText: { 
-    fontSize: 9, 
-    fontWeight: '700', 
-    letterSpacing: 0.3,
+    letterSpacing: -0.2,
   },
   chatList: { 
     flex: 1, 
@@ -592,19 +497,13 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   heroBadge: {
-    width: 68,
-    height: 68,
-    borderRadius: 22,
+    width: 64,
+    height: 64,
+    borderRadius: 20,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 14,
-    position: 'relative',
-  },
-  heroSparkle: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
   },
   emptyTitle: {
     fontSize: 19,
@@ -683,23 +582,19 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   dualCardContainer: { 
-    borderRadius: 20, 
-    padding: 14, 
-    marginVertical: 14, 
-    borderWidth: 1 
+    borderRadius: 18, 
+    padding: 12, 
+    marginVertical: 12, 
+    borderWidth: 1,
+    overflow: 'hidden',
   },
   dualHeaderRow: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     alignItems: 'center', 
-    marginBottom: 12 
+    marginBottom: 10 
   },
   dualTitleGroup: {},
-  dualTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
   dualTitle: { 
     fontSize: 14, 
     fontWeight: '700', 
@@ -717,7 +612,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 5,
   },
   stopText: { 
     color: '#FCA5A5', 
@@ -728,7 +623,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderRadius: 12,
     padding: 3,
-    marginBottom: 12,
+    marginBottom: 10,
     borderWidth: 1,
   },
   tabButton: {
@@ -747,12 +642,12 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     fontWeight: '600',
   },
-  carouselScrollView: {
-    width: '100%',
+  carouselContentContainer: {
+    paddingRight: 10,
   },
   slideCard: { 
     borderRadius: 14, 
-    padding: 14, 
+    padding: 12, 
     minHeight: 220, 
     borderWidth: 1,
     justifyContent: 'space-between',
@@ -762,7 +657,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   slideTitle: { 
     fontSize: 13, 
@@ -784,8 +679,8 @@ const styles = StyleSheet.create({
   },
   chooseBtn: { 
     borderRadius: 12, 
-    paddingVertical: 11, 
-    marginTop: 12, 
+    paddingVertical: 10, 
+    marginTop: 10, 
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -801,7 +696,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 6,
-    marginTop: 12,
+    marginTop: 10,
   },
   dot: {
     width: 6,

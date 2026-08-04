@@ -153,8 +153,8 @@ export default function SidebarDrawer() {
 
           {/* Footer Info */}
           <View style={[styles.footer, { borderColor: colors.cardBorder }]}>
-            <Text style={[styles.footerText, { color: colors.textSecondary }]}>Car Specialist AI v2.0</Text>
-            <Text style={[styles.footerSub, { color: colors.textMuted }]}>100% On-Device Engine</Text>
+            <Text style={[styles.footerText, { color: colors.textSecondary }]}>Car AI v2.0</Text>
+            <Text style={[styles.footerSub, { color: colors.textMuted }]}>100% Offline Mode</Text>
           </View>
         </View>
       </View>

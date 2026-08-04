@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Image, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons, Feather } from '@expo/vector-icons';
 import { useMobileChatStore } from '../store/mobileChatStore';
 import { useThemeStore } from '../store/themeStore';
 
@@ -35,35 +35,34 @@ export default function ModelSetupWizard() {
         <View style={[styles.card, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
           
           {/* App Brand Icon Wrapper */}
-          <View style={[styles.iconWrapper, { borderColor: colors.accentCyan }]}>
+          <View style={[styles.iconWrapper, { borderColor: colors.accent }]}>
             <Image 
               source={require('../../assets/icon.png')} 
               style={styles.appIcon} 
               resizeMode="cover"
             />
-            <MaterialCommunityIcons name="shield-check" size={20} color={colors.accentCyan} style={styles.iconShieldBadge} />
           </View>
 
-          <Text style={[styles.title, { color: colors.textPrimary }]}>Car Specialist GPT</Text>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>Car AI Setup</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            On-device automotive intelligence. Executes 100% offline on your phone without internet or cloud billing.
+            Your personal automotive assistant. Works 100% offline on your phone without internet.
           </Text>
 
-          {/* Telemetry Specs Grid */}
+          {/* User-Friendly Info Specs Grid */}
           <View style={[styles.specsGrid, { backgroundColor: colors.subCardBg, borderColor: colors.subCardBorder }]}>
             <View style={styles.specItem}>
-              <Text style={[styles.specValue, { color: colors.accentCyan }]}>Gemma 2B</Text>
-              <Text style={[styles.specLabel, { color: colors.textMuted }]}>AI Model</Text>
+              <Text style={[styles.specValue, { color: colors.accent }]}>Offline AI</Text>
+              <Text style={[styles.specLabel, { color: colors.textMuted }]}>Engine</Text>
             </View>
             <View style={[styles.specDivider, { backgroundColor: colors.subCardBorder }]} />
             <View style={styles.specItem}>
               <Text style={[styles.specValue, { color: colors.textPrimary }]}>1.68 GB</Text>
-              <Text style={[styles.specLabel, { color: colors.textMuted }]}>Storage</Text>
+              <Text style={[styles.specLabel, { color: colors.textMuted }]}>File Size</Text>
             </View>
             <View style={[styles.specDivider, { backgroundColor: colors.subCardBorder }]} />
             <View style={styles.specItem}>
-              <Text style={[styles.specValue, { color: colors.offlineGreenText }]}>1.5 GB</Text>
-              <Text style={[styles.specLabel, { color: colors.textMuted }]}>RAM Footprint</Text>
+              <Text style={[styles.specValue, { color: colors.offlineGreenText }]}>No Internet</Text>
+              <Text style={[styles.specLabel, { color: colors.textMuted }]}>Required</Text>
             </View>
           </View>
 
@@ -84,30 +83,30 @@ export default function ModelSetupWizard() {
                 onPress={() => startModelDownload()}
               >
                 <Feather name="download" size={18} color="#FFFFFF" />
-                <Text style={styles.downloadBtnText}>Initialize AI Engine (1.68 GB)</Text>
+                <Text style={styles.downloadBtnText}>Download Car AI (1.68 GB)</Text>
               </TouchableOpacity>
 
               <Text style={[styles.footerNotice, { color: colors.textMuted }]}>
-                Downloads once via HTTPS CDN and saves to secure local storage.
+                Downloads once onto your device so you can get car help anywhere.
               </Text>
             </View>
           ) : (
             <View style={styles.progressBox}>
-              <ActivityIndicator size="large" color={colors.accentCyan} />
-              <Text style={[styles.progressTitle, { color: colors.textPrimary }]}>Downloading AI Engine...</Text>
-              <Text style={[styles.progressPercent, { color: colors.accentCyan }]}>{downloadProgress.progressPercent}%</Text>
+              <ActivityIndicator size="large" color={colors.accent} />
+              <Text style={[styles.progressTitle, { color: colors.textPrimary }]}>Downloading Car AI...</Text>
+              <Text style={[styles.progressPercent, { color: colors.accent }]}>{downloadProgress.progressPercent}%</Text>
 
               <View style={[styles.progressBarBg, { backgroundColor: colors.subCardBg }]}>
-                <View style={[styles.progressBarFill, { width: `${downloadProgress.progressPercent}%`, backgroundColor: colors.accentCyan }]} />
+                <View style={[styles.progressBarFill, { width: `${downloadProgress.progressPercent}%`, backgroundColor: colors.accent }]} />
               </View>
 
               <Text style={[styles.progressDetails, { color: colors.textSecondary }]}>
                 {downloadProgress.writtenMB} MB / {downloadProgress.totalMB} MB
               </Text>
               
-              <View style={[styles.infoBadgeContainer, { backgroundColor: colors.telemetryCyanBg, borderColor: colors.telemetryCyanBorder }]}>
-                <Text style={[styles.notice, { color: colors.telemetryCyanText }]}>
-                  <Feather name="zap" size={13} color={colors.telemetryCyanText} /> Background download active. You can switch apps or lock screen while downloading.
+              <View style={[styles.infoBadgeContainer, { backgroundColor: colors.badgeBg, borderColor: colors.badgeBorder }]}>
+                <Text style={[styles.notice, { color: colors.badgeText }]}>
+                  <Feather name="zap" size={13} color={colors.badgeText} /> Download runs in the background. You can use your phone normally while downloading.
                 </Text>
               </View>
             </View>
@@ -149,38 +148,28 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.15,
     shadowRadius: 20,
     elevation: 8,
   },
   iconWrapper: {
-    width: 90,
-    height: 90,
-    borderRadius: 24,
-    overflow: 'visible',
+    width: 88,
+    height: 88,
+    borderRadius: 22,
+    overflow: 'hidden',
     marginBottom: 20,
-    borderWidth: 2,
-    position: 'relative',
+    borderWidth: 1.5,
   },
   appIcon: {
     width: '100%',
     height: '100%',
-    borderRadius: 22,
-  },
-  iconShieldBadge: {
-    position: 'absolute',
-    bottom: -6,
-    right: -6,
-    backgroundColor: '#090D16',
-    borderRadius: 10,
-    padding: 2,
   },
   title: { 
     fontSize: 23, 
     fontWeight: '700', 
     textAlign: 'center', 
     marginBottom: 8,
-    letterSpacing: -0.4,
+    letterSpacing: -0.3,
   },
   subtitle: { 
     fontSize: 13.5, 
