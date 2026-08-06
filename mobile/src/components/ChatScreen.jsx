@@ -103,7 +103,9 @@ export default function ChatScreen() {
           {/* Empty state */}
           {messages.length === 0 && !dualResponse && (
             <View style={styles.empty}>
-              <Text style={styles.emptyIcon}>🚗</Text>
+              <View style={[styles.emptyBadge, { backgroundColor: colors.accentSoft }]}>
+                <MaterialCommunityIcons name="steering" size={28} color={colors.accent} />
+              </View>
               <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>Ask anything about your car</Text>
               <Text style={[styles.emptySub, { color: colors.textSub }]}>
                 Specs, repairs, diagnostics — just type below.
@@ -271,7 +273,14 @@ const styles = StyleSheet.create({
 
   // Empty state
   empty:      { alignItems: 'center', paddingTop: SPACING.xl },
-  emptyIcon:  { fontSize: 40, marginBottom: SPACING.md },
+  emptyBadge: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.md,
+  },
   emptyTitle: { ...TYPE.title, textAlign: 'center', marginBottom: SPACING.xs },
   emptySub:   { ...TYPE.body, textAlign: 'center', marginBottom: SPACING.lg },
   promptGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, width: '100%' },

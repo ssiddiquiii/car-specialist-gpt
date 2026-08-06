@@ -5,32 +5,14 @@ import {
   StyleSheet,
   TouchableOpacity,
   Animated,
-  ScrollView,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useMobileChatStore } from '../store/mobileChatStore';
 import { useThemeStore } from '../store/themeStore';
 import { SPACING, TYPE, RADIUS } from '../theme';
 
-function AnimatedCar({ color }) {
-  const bounceY  = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(bounceY, { toValue: -5, duration: 600, useNativeDriver: true }),
-        Animated.timing(bounceY, { toValue: 0,  duration: 600, useNativeDriver: true }),
-      ])
-    ).start();
-  }, []);
-
-  return (
-    <Animated.View style={{ transform: [{ translateY: bounceY }] }}>
-      <Text style={styles.carEmoji}>🚗</Text>
-    </Animated.View>
-  );
-}
 
 export default function ModelSetupWizard() {
   const insets = useSafeAreaInsets();
@@ -65,8 +47,14 @@ export default function ModelSetupWizard() {
       {/* Content — fully centered */}
       <View style={styles.body}>
 
-        {/* Animated car */}
-        <AnimatedCar color={colors.accent} />
+        {/* App icon badge — premium rounded square */}
+        <View style={[styles.iconBadge, { borderColor: colors.border }]}>
+          <Image
+            source={require('../../assets/icon.png')}
+            style={styles.iconImage}
+            resizeMode="cover"
+          />
+        </View>
 
         {!isDownloading ? (
           /* ─── IDLE STATE ─── */
@@ -238,5 +226,19 @@ const styles = StyleSheet.create({
   fill: {
     height: '100%',
     borderRadius: 1,
+  },
+
+  // App icon badge
+  iconBadge: {
+    width: 80,
+    height: 80,
+    borderRadius: 22,
+    borderWidth: 1,
+    overflow: 'hidden',
+    marginBottom: SPACING.xl,
+  },
+  iconImage: {
+    width: '100%',
+    height: '100%',
   },
 });
