@@ -1,272 +1,242 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  ActivityIndicator,
-  Image,
+  Animated,
   ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons, Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import { useMobileChatStore } from '../store/mobileChatStore';
 import { useThemeStore } from '../store/themeStore';
+import { SPACING, TYPE, RADIUS } from '../theme';
+
+function AnimatedCar({ color }) {
+  const bounceY  = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(bounceY, { toValue: -5, duration: 600, useNativeDriver: true }),
+        Animated.timing(bounceY, { toValue: 0,  duration: 600, useNativeDriver: true }),
+      ])
+    ).start();
+  }, []);
+
+  return (
+    <Animated.View style={{ transform: [{ translateY: bounceY }] }}>
+      <Text style={styles.carEmoji}>🚗</Text>
+    </Animated.View>
+  );
+}
 
 export default function ModelSetupWizard() {
   const insets = useSafeAreaInsets();
   const { isDownloading, downloadProgress, startModelDownload, downloadError } = useMobileChatStore();
   const { colors, themeMode, toggleTheme } = useThemeStore();
 
-  return (
-    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+  const progressAnim = useRef(new Animated.Value(0)).current;
 
-      {/* Compact top bar */}
-      <View style={[styles.topBar, { borderBottomColor: colors.cardBorder }]}>
-        <Text style={[styles.topBarTitle, { color: colors.textPrimary }]}>Car AI</Text>
-        <TouchableOpacity
-          activeOpacity={0.7}
-          style={styles.themeBtn}
-          onPress={toggleTheme}
-        >
+  useEffect(() => {
+    Animated.timing(progressAnim, {
+      toValue: (downloadProgress.progressPercent || 0) / 100,
+      duration: 400,
+      useNativeDriver: false,
+    }).start();
+  }, [downloadProgress.progressPercent]);
+
+  return (
+    <View style={[styles.screen, { backgroundColor: colors.bg, paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+
+      {/* Minimal top row */}
+      <View style={styles.topBar}>
+        <Text style={[styles.appName, { color: colors.textPrimary }]}>Car AI</Text>
+        <TouchableOpacity onPress={toggleTheme} style={styles.themeBtn} activeOpacity={0.6}>
           <Ionicons
-            name={themeMode === 'dark' ? 'sunny' : 'moon'}
+            name={themeMode === 'dark' ? 'sunny-outline' : 'moon-outline'}
             size={18}
-            color={themeMode === 'dark' ? '#F59E0B' : '#6B7280'}
+            color={colors.textMuted}
           />
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      {/* Content — fully centered */}
+      <View style={styles.body}>
 
-        {/* App Icon */}
-        <View style={[styles.iconWrapper, { borderColor: colors.cardBorder }]}>
-          <Image
-            source={require('../../assets/icon.png')}
-            style={styles.appIcon}
-            resizeMode="cover"
-          />
-        </View>
+        {/* Animated car */}
+        <AnimatedCar color={colors.accent} />
 
-        <Text style={[styles.title, { color: colors.textPrimary }]}>Set Up Car AI</Text>
-        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          Download once and get instant car help anywhere — no internet needed after setup.
-        </Text>
-
-        {/* Info strips */}
-        <View style={[styles.infoStrip, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
-          <View style={styles.infoItem}>
-            <Ionicons name="car-sport" size={18} color={colors.accent} />
-            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Offline AI</Text>
-          </View>
-          <View style={[styles.infoDivider, { backgroundColor: colors.cardBorder }]} />
-          <View style={styles.infoItem}>
-            <Feather name="download" size={16} color={colors.accent} />
-            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>1.68 GB</Text>
-          </View>
-          <View style={[styles.infoDivider, { backgroundColor: colors.cardBorder }]} />
-          <View style={styles.infoItem}>
-            <Ionicons name="wifi-outline" size={18} color={colors.offlineGreenText} />
-            <Text style={[styles.infoLabel, { color: colors.offlineGreenText }]}>No internet</Text>
-          </View>
-        </View>
-
-        {/* Error box */}
-        {downloadError && (
-          <View style={styles.errorBox}>
-            <Feather name="alert-triangle" size={14} color="#EF4444" />
-            <Text style={styles.errorText}>{downloadError}</Text>
-          </View>
-        )}
-
-        {/* Download / Progress */}
         {!isDownloading ? (
+          /* ─── IDLE STATE ─── */
           <>
+            <Text style={[styles.hero, { color: colors.textPrimary }]}>Set up Car AI</Text>
+            <Text style={[styles.sub, { color: colors.textSub }]}>
+              Download once. Works offline, everywhere.
+            </Text>
+
+            {/* Small metadata row */}
+            <View style={styles.metaRow}>
+              <View style={styles.metaItem}>
+                <Feather name="download" size={12} color={colors.textMuted} />
+                <Text style={[styles.metaText, { color: colors.textMuted }]}>1.68 GB</Text>
+              </View>
+              <Text style={[styles.metaDot, { color: colors.border }]}>·</Text>
+              <View style={styles.metaItem}>
+                <Ionicons name="wifi-outline" size={12} color={colors.accentGreen} />
+                <Text style={[styles.metaText, { color: colors.accentGreen }]}>No internet after setup</Text>
+              </View>
+            </View>
+
+            {downloadError && (
+              <Text style={styles.errorText}>{downloadError}</Text>
+            )}
+
             <TouchableOpacity
               activeOpacity={0.85}
-              style={[styles.downloadBtn, { backgroundColor: colors.accent }]}
+              style={[styles.cta, { backgroundColor: colors.accent }]}
               onPress={() => startModelDownload()}
             >
-              <Feather name="download" size={18} color="#FFFFFF" />
-              <Text style={styles.downloadBtnText}>Download Car AI</Text>
+              <Text style={styles.ctaText}>Download now</Text>
             </TouchableOpacity>
-            <Text style={[styles.footerNote, { color: colors.textMuted }]}>
-              Downloads once to your device. You can use the app normally while it downloads.
+
+            <Text style={[styles.caption, { color: colors.textMuted }]}>
+              You can use other apps while it downloads
             </Text>
           </>
         ) : (
-          <View style={[styles.progressCard, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
-            <ActivityIndicator size="small" color={colors.accent} />
-            <Text style={[styles.progressTitle, { color: colors.textPrimary }]}>Downloading Car AI...</Text>
-            <Text style={[styles.progressPercent, { color: colors.accent }]}>{downloadProgress.progressPercent}%</Text>
+          /* ─── DOWNLOADING STATE ─── */
+          <>
+            <Text style={[styles.hero, { color: colors.textPrimary }]}>
+              {downloadProgress.progressPercent}%
+            </Text>
+            <Text style={[styles.sub, { color: colors.textSub }]}>Setting up Car AI</Text>
 
-            <View style={[styles.progressBarBg, { backgroundColor: colors.subCardBg }]}>
-              <View style={[styles.progressBarFill, { width: `${downloadProgress.progressPercent}%`, backgroundColor: colors.accent }]} />
+            {/* Thin progress track */}
+            <View style={[styles.track, { backgroundColor: colors.border }]}>
+              <Animated.View
+                style={[
+                  styles.fill,
+                  {
+                    backgroundColor: colors.accent,
+                    width: progressAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0%', '100%'],
+                    }),
+                  },
+                ]}
+              />
             </View>
 
-            <Text style={[styles.progressMeta, { color: colors.textSecondary }]}>
+            <Text style={[styles.metaText, { color: colors.textMuted, marginTop: SPACING.sm }]}>
               {downloadProgress.writtenMB} MB / {downloadProgress.totalMB} MB
             </Text>
 
-            <Text style={[styles.progressNotice, { color: colors.textMuted }]}>
-              You can lock your screen or use other apps — the download continues in the background.
+            <Text style={[styles.caption, { color: colors.textMuted, marginTop: SPACING.lg }]}>
+              Keep the app open or lock your screen — the download continues automatically.
             </Text>
-          </View>
+          </>
         )}
-
-      </ScrollView>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  screen: { flex: 1 },
+
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
   },
-  topBarTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    letterSpacing: -0.3,
+  appName: {
+    ...TYPE.heading,
   },
   themeBtn: {
-    width: 36,
-    height: 36,
+    padding: SPACING.xs,
+  },
+
+  body: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: SPACING.xl,
+    paddingBottom: SPACING.xxl,
   },
-  scrollContent: {
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 40,
-    paddingBottom: 40,
+
+  carEmoji: {
+    fontSize: 48,
+    marginBottom: SPACING.xl,
   },
-  iconWrapper: {
-    width: 88,
-    height: 88,
-    borderRadius: 22,
-    borderWidth: 1,
-    overflow: 'hidden',
-    marginBottom: 20,
-  },
-  appIcon: {
-    width: '100%',
-    height: '100%',
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
+
+  hero: {
+    ...TYPE.hero,
     textAlign: 'center',
-    marginBottom: 8,
-    letterSpacing: -0.3,
+    marginBottom: SPACING.sm,
   },
-  subtitle: {
+  sub: {
+    ...TYPE.body,
+    textAlign: 'center',
+    marginBottom: SPACING.lg,
+  },
+
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    marginBottom: SPACING.xl,
+  },
+  metaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  metaText: {
+    ...TYPE.small,
+  },
+  metaDot: {
     fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 21,
-    marginBottom: 28,
-    maxWidth: 320,
   },
-  infoStrip: {
-    flexDirection: 'row',
-    width: '100%',
-    borderRadius: 14,
-    borderWidth: 1,
-    paddingVertical: 14,
-    paddingHorizontal: 10,
-    marginBottom: 28,
-    justifyContent: 'space-around',
-    alignItems: 'center',
-  },
-  infoItem: {
-    alignItems: 'center',
-    gap: 5,
-  },
-  infoLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  infoDivider: {
-    width: 1,
-    height: 28,
-  },
-  errorBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#FEF2F2',
-    borderColor: '#FCA5A5',
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
-    width: '100%',
-  },
+
   errorText: {
-    color: '#DC2626',
-    fontSize: 13,
-    flex: 1,
+    ...TYPE.small,
+    color: '#EF4444',
+    textAlign: 'center',
+    marginBottom: SPACING.md,
+  },
+
+  cta: {
+    width: '100%',
+    paddingVertical: 15,
+    borderRadius: RADIUS.pill,
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  ctaText: {
+    color: '#FFFFFF',
+    ...TYPE.heading,
+  },
+
+  caption: {
+    ...TYPE.small,
+    textAlign: 'center',
     lineHeight: 18,
   },
-  downloadBtn: {
+
+  // Progress bar
+  track: {
     width: '100%',
-    borderRadius: 14,
-    paddingVertical: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    marginBottom: 12,
-  },
-  downloadBtnText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  footerNote: {
-    fontSize: 12,
-    textAlign: 'center',
-    lineHeight: 17,
-  },
-  progressCard: {
-    width: '100%',
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 20,
-    alignItems: 'center',
-    gap: 10,
-  },
-  progressTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  progressPercent: {
-    fontSize: 36,
-    fontWeight: '800',
-  },
-  progressBarBg: {
-    width: '100%',
-    height: 8,
-    borderRadius: 4,
+    height: 2,
+    borderRadius: 1,
     overflow: 'hidden',
+    marginTop: SPACING.md,
   },
-  progressBarFill: {
+  fill: {
     height: '100%',
-    borderRadius: 4,
-  },
-  progressMeta: {
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  progressNotice: {
-    fontSize: 12,
-    textAlign: 'center',
-    lineHeight: 17,
-    marginTop: 4,
+    borderRadius: 1,
   },
 });

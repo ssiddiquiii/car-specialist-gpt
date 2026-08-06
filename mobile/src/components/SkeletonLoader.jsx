@@ -1,69 +1,50 @@
 import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Animated } from 'react-native';
 import { useThemeStore } from '../store/themeStore';
+import { SPACING, RADIUS } from '../theme';
 
-function SkeletonItem({ width, height, borderRadius = 8 }) {
+function SkeletonLine({ width, height = 10 }) {
   const { colors } = useThemeStore();
-  const opacity = useRef(new Animated.Value(0.4)).current;
+  const opacity = useRef(new Animated.Value(0.35)).current;
 
   useEffect(() => {
-    const pulse = Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacity, { toValue: 1, duration: 700, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.4, duration: 700, useNativeDriver: true }),
-      ])
-    );
-    pulse.start();
-    return () => pulse.stop();
-  }, [opacity]);
+    const loop = Animated.loop(Animated.sequence([
+      Animated.timing(opacity, { toValue: 0.9,  duration: 650, useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 0.35, duration: 650, useNativeDriver: true }),
+    ]));
+    loop.start();
+    return () => loop.stop();
+  }, []);
 
   return (
-    <Animated.View
-      style={{
-        width,
-        height,
-        borderRadius,
-        backgroundColor: colors.skeletonBg,
-        opacity,
-      }}
-    />
+    <Animated.View style={{ width, height, borderRadius: RADIUS.sm, backgroundColor: colors.skeleton, opacity }} />
   );
 }
 
 export function ChatSkeletonLoader() {
   const { colors } = useThemeStore();
   return (
-    <View style={[styles.skeletonRow, { backgroundColor: colors.aiBubble, borderColor: colors.aiBubbleBorder }]}>
-      <View style={styles.skeletonLabel}>
-        <SkeletonItem width={12} height={12} borderRadius={6} />
-        <SkeletonItem width={48} height={10} borderRadius={5} />
-      </View>
-      <View style={styles.skeletonLines}>
-        <SkeletonItem width="92%" height={12} borderRadius={6} />
-        <SkeletonItem width="75%" height={12} borderRadius={6} />
-        <SkeletonItem width="60%" height={12} borderRadius={6} />
+    <View style={[styles.bubble, { backgroundColor: colors.aiBubble }]}>
+      <SkeletonLine width={42} height={8} />
+      <View style={styles.lines}>
+        <SkeletonLine width="90%" />
+        <SkeletonLine width="70%" />
+        <SkeletonLine width="55%" />
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  skeletonRow: {
-    borderRadius: 18,
-    borderBottomLeftRadius: 4,
-    borderWidth: 1,
-    padding: 14,
-    marginBottom: 12,
-    maxWidth: '88%',
+  bubble: {
+    borderRadius: 20,
+    borderBottomLeftRadius: RADIUS.sm,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    maxWidth: '80%',
     alignSelf: 'flex-start',
+    marginBottom: SPACING.sm,
+    gap: SPACING.sm,
   },
-  skeletonLabel: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 10,
-  },
-  skeletonLines: {
-    gap: 8,
-  },
+  lines: { gap: SPACING.sm },
 });
