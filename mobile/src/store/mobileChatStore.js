@@ -163,7 +163,7 @@ export const useMobileChatStore = create((set, get) => ({
     }
   },
 
-  // Optimized Single-Stream Primary Message Sending
+  // Dual Response Generation (Sequential A + B, User Selects Output)
   sendMessage: async (content) => {
     if (!content.trim()) return;
 
@@ -203,14 +203,14 @@ export const useMobileChatStore = create((set, get) => ({
 
     try {
       let pendingA = "";
-      let lastUpdate = Date.now();
+      let lastUpdateA = Date.now();
 
-      // Generate Primary Response (Temp 0.3 Factual) immediately
+      // 1. Stream Option A (Temp 0.3 Factual)
       await LlamaService.generatePrimaryResponse(
         [userMsg],
         (tokenA) => {
           pendingA += tokenA;
-          if (Date.now() - lastUpdate > 60) {
+          if (Date.now() - lastUpdateA > 60) {
             set((state) => ({
               dualResponse: state.dualResponse ? {
                 ...state.dualResponse,
@@ -218,57 +218,28 @@ export const useMobileChatStore = create((set, get) => ({
               } : null
             }));
             pendingA = "";
-            lastUpdate = Date.now();
+            lastUpdateA = Date.now();
           }
         }
       );
 
-      // Flush remaining primary tokens & mark usable immediately!
-      set((state) => {
-        const finalContentA = state.dualResponse ? (state.dualResponse.response_a.content + pendingA) : '';
-        const aiMsg = { id: `ai_${Date.now()}`, role: 'assistant', content: finalContentA, timestamp: new Date().toISOString() };
+      // Flush remaining Option A tokens
+      set((state) => ({
+        dualResponse: state.dualResponse ? {
+          ...state.dualResponse,
+          response_a: { ...state.dualResponse.response_a, content: state.dualResponse.response_a.content + pendingA }
+        } : null
+      }));
 
-        const currentConvos = state.conversations.map((c) =>
-          c.id === convId ? { ...c, messages: [...(c.messages || []), aiMsg] } : c
-        );
-
-        get().saveConversationsToStorage(currentConvos);
-
-        return {
-          isTyping: false,
-          conversations: currentConvos,
-          dualResponse: state.dualResponse ? {
-            ...state.dualResponse,
-            response_a: { ...state.dualResponse.response_a, content: finalContentA },
-            streaming_complete: true
-          } : null
-        };
-      });
-    } catch (e) {
-      console.error("[MobileChatStore] Local generation failed:", e);
-      set({ isTyping: false });
-    }
-  },
-
-  // On-Demand Alternate Response (Temp 0.6 Creative)
-  generateAlternateResponse: async () => {
-    const { dualResponse, conversations, activeConversationId } = get();
-    if (!dualResponse) return;
-
-    set({ isTyping: true });
-
-    try {
+      // 2. Stream Option B (Temp 0.6 Descriptive)
       let pendingB = "";
-      let lastUpdate = Date.now();
-
-      const currentConv = conversations.find(c => c.id === activeConversationId);
-      const userMsg = currentConv?.messages.find(m => m.role === 'user') || { role: 'user', content: dualResponse.prompt };
+      let lastUpdateB = Date.now();
 
       await LlamaService.generateAlternateResponse(
         [userMsg],
         (tokenB) => {
           pendingB += tokenB;
-          if (Date.now() - lastUpdate > 60) {
+          if (Date.now() - lastUpdateB > 60) {
             set((state) => ({
               dualResponse: state.dualResponse ? {
                 ...state.dualResponse,
@@ -276,11 +247,12 @@ export const useMobileChatStore = create((set, get) => ({
               } : null
             }));
             pendingB = "";
-            lastUpdate = Date.now();
+            lastUpdateB = Date.now();
           }
         }
       );
 
+      // Flush remaining Option B tokens & mark streaming complete!
       set((state) => ({
         isTyping: false,
         dualResponse: state.dualResponse ? {
@@ -289,9 +261,13 @@ export const useMobileChatStore = create((set, get) => ({
           streaming_complete: true
         } : null
       }));
+
     } catch (e) {
-      console.error("[MobileChatStore] Alternate generation failed:", e);
-      set({ isTyping: false });
+      console.error("[MobileChatStore] Local generation failed:", e);
+      set((state) => ({
+        isTyping: false,
+        dualResponse: state.dualResponse ? { ...state.dualResponse, streaming_complete: true } : null
+      }));
     }
   },
 
