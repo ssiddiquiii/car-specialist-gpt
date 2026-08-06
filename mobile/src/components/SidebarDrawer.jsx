@@ -1,12 +1,12 @@
 import React from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  ScrollView, 
-  Modal, 
-  Pressable 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Modal,
+  Pressable,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, Ionicons } from '@expo/vector-icons';
@@ -16,17 +16,17 @@ import { useThemeStore } from '../store/themeStore';
 export default function SidebarDrawer() {
   const insets = useSafeAreaInsets();
   const { colors, themeMode, toggleTheme } = useThemeStore();
-  const { 
-    isSidebarOpen, 
-    closeSidebar, 
-    conversations, 
-    activeConversationId, 
-    selectConversation, 
-    startNewChat, 
+  const {
+    isSidebarOpen,
+    closeSidebar,
+    conversations,
+    activeConversationId,
+    selectConversation,
+    startNewChat,
     deleteConversation,
     user,
     logoutUser,
-    toggleAuthModal
+    toggleAuthModal,
   } = useMobileChatStore();
 
   if (!isSidebarOpen) return null;
@@ -39,111 +39,131 @@ export default function SidebarDrawer() {
       onRequestClose={closeSidebar}
     >
       <View style={styles.overlay}>
-        {/* Click outside to close */}
         <Pressable style={styles.backdrop} onPress={closeSidebar} />
 
-        {/* Slide Drawer Content */}
-        <View style={[styles.drawer, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder, paddingTop: insets.top + 12, paddingBottom: insets.bottom + 12 }]}>
-          
-          {/* Header & User Profile Card */}
-          <View style={[styles.profileCard, { backgroundColor: colors.subCardBg, borderColor: colors.subCardBorder }]}>
+        <View style={[
+          styles.drawer,
+          {
+            backgroundColor: colors.cardBg,
+            borderRightColor: colors.cardBorder,
+            paddingTop: insets.top + 12,
+            paddingBottom: insets.bottom + 16,
+          },
+        ]}>
+
+          {/* Drawer Header */}
+          <View style={styles.drawerHeader}>
+            <View style={styles.brandRow}>
+              <Ionicons name="car-sport" size={20} color={colors.accent} />
+              <Text style={[styles.brandName, { color: colors.textPrimary }]}>Car AI</Text>
+            </View>
+            <TouchableOpacity activeOpacity={0.7} onPress={closeSidebar}>
+              <Feather name="x" size={20} color={colors.textMuted} />
+            </TouchableOpacity>
+          </View>
+
+          {/* User profile row */}
+          <View style={[styles.profileRow, { backgroundColor: colors.subCardBg, borderColor: colors.cardBorder }]}>
             <View style={[styles.avatarCircle, { backgroundColor: colors.accent }]}>
               <Text style={styles.avatarText}>
-                {user ? user.name.charAt(0).toUpperCase() : <Feather name="user" size={18} color="#FFFFFF" />}
+                {user ? user.name.charAt(0).toUpperCase() : '?'}
               </Text>
             </View>
             <View style={styles.profileInfo}>
-              <Text style={[styles.userName, { color: colors.textPrimary }]}>{user ? user.name : 'Guest User'}</Text>
-              <Text style={[styles.userEmail, { color: colors.textSecondary }]}>{user ? user.email : 'Offline Access Mode'}</Text>
+              <Text style={[styles.profileName, { color: colors.textPrimary }]}>
+                {user ? user.name : 'Guest'}
+              </Text>
+              <Text style={[styles.profileEmail, { color: colors.textSecondary }]}>
+                {user ? user.email : 'Offline mode'}
+              </Text>
             </View>
           </View>
 
-          {/* Action Row: Theme Toggle & Auth */}
+          {/* Actions */}
           <View style={styles.actionRow}>
-            <TouchableOpacity 
-              activeOpacity={0.8} 
-              style={[styles.authBtn, { backgroundColor: colors.subCardBg, borderColor: colors.subCardBorder }]} 
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={[styles.actionBtn, { backgroundColor: colors.subCardBg, borderColor: colors.cardBorder }]}
               onPress={() => {
-                if (user) {
-                  logoutUser();
-                } else {
-                  closeSidebar();
-                  toggleAuthModal();
-                }
+                if (user) { logoutUser(); } else { closeSidebar(); toggleAuthModal(); }
               }}
             >
-              <Feather name={user ? "log-out" : "log-in"} size={14} color={colors.accent} />
-              <Text style={[styles.authBtnText, { color: colors.accent }]}>
+              <Feather name={user ? 'log-out' : 'log-in'} size={14} color={colors.accent} />
+              <Text style={[styles.actionBtnText, { color: colors.accent }]}>
                 {user ? 'Sign Out' : 'Sign In'}
               </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
-              activeOpacity={0.8} 
-              style={[styles.themeToggleBtn, { backgroundColor: colors.subCardBg, borderColor: colors.subCardBorder }]}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={[styles.actionBtn, { backgroundColor: colors.subCardBg, borderColor: colors.cardBorder }]}
               onPress={toggleTheme}
             >
-              <Ionicons 
-                name={themeMode === 'dark' ? 'sunny' : 'moon'} 
-                size={16} 
-                color={themeMode === 'dark' ? '#F59E0B' : '#6366F1'} 
+              <Ionicons
+                name={themeMode === 'dark' ? 'sunny' : 'moon'}
+                size={14}
+                color={themeMode === 'dark' ? '#F59E0B' : '#6B7280'}
               />
-              <Text style={[styles.themeToggleText, { color: colors.textPrimary }]}>
+              <Text style={[styles.actionBtnText, { color: colors.textPrimary }]}>
                 {themeMode === 'dark' ? 'Light' : 'Dark'}
               </Text>
             </TouchableOpacity>
           </View>
 
-          <View style={[styles.divider, { backgroundColor: colors.cardBorder }]} />
-
-          {/* New Chat Button */}
-          <TouchableOpacity 
-            activeOpacity={0.8} 
+          {/* New Chat */}
+          <TouchableOpacity
+            activeOpacity={0.85}
             style={[styles.newChatBtn, { backgroundColor: colors.accent }]}
             onPress={startNewChat}
           >
-            <Feather name="plus" size={18} color="#FFFFFF" />
+            <Feather name="plus" size={16} color="#FFFFFF" />
             <Text style={styles.newChatText}>Start New Chat</Text>
           </TouchableOpacity>
 
-          <Text style={[styles.sectionHeader, { color: colors.textMuted }]}>Recent Conversations</Text>
+          {/* Section label */}
+          <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>RECENT CHATS</Text>
 
-          {/* Chat History List */}
-          <ScrollView style={styles.chatsList} showsVerticalScrollIndicator={false}>
+          {/* Chat history */}
+          <ScrollView style={styles.historyList} showsVerticalScrollIndicator={false}>
             {conversations.length === 0 ? (
-              <Text style={[styles.emptyChatsText, { color: colors.textMuted }]}>No past conversations yet.</Text>
+              <Text style={[styles.emptyText, { color: colors.textMuted }]}>No past chats yet.</Text>
             ) : (
               conversations.map((conv) => {
                 const isActive = conv.id === activeConversationId;
                 return (
-                  <View 
-                    key={conv.id} 
+                  <View
+                    key={conv.id}
                     style={[
-                      styles.chatItemRow, 
-                      { backgroundColor: colors.subCardBg, borderColor: colors.subCardBorder },
-                      isActive && { borderColor: colors.accent, backgroundColor: colors.badgeBg }
+                      styles.historyRow,
+                      { borderColor: isActive ? colors.accent : 'transparent', backgroundColor: isActive ? colors.badgeBg : 'transparent' },
                     ]}
                   >
-                    <TouchableOpacity 
-                      activeOpacity={0.7} 
-                      style={styles.chatTitleArea}
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      style={styles.historyTitleArea}
                       onPress={() => selectConversation(conv.id)}
                     >
-                      <Feather name="message-square" size={14} color={isActive ? colors.accent : colors.textSecondary} />
-                      <Text 
-                        style={[styles.chatTitleText, { color: colors.textSecondary }, isActive && { color: colors.textPrimary, fontWeight: '700' }]} 
+                      <Feather
+                        name="message-square"
+                        size={13}
+                        color={isActive ? colors.accent : colors.textMuted}
+                      />
+                      <Text
+                        style={[
+                          styles.historyTitle,
+                          { color: isActive ? colors.textPrimary : colors.textSecondary },
+                          isActive && { fontWeight: '700' },
+                        ]}
                         numberOfLines={1}
                       >
                         {conv.title || 'Untitled Chat'}
                       </Text>
                     </TouchableOpacity>
-
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       activeOpacity={0.6}
-                      style={styles.deleteBtn}
                       onPress={() => deleteConversation(conv.id)}
                     >
-                      <Feather name="trash-2" size={14} color={colors.textMuted} />
+                      <Feather name="trash-2" size={13} color={colors.textMuted} />
                     </TouchableOpacity>
                   </View>
                 );
@@ -151,10 +171,9 @@ export default function SidebarDrawer() {
             )}
           </ScrollView>
 
-          {/* Footer Info */}
-          <View style={[styles.footer, { borderColor: colors.cardBorder }]}>
-            <Text style={[styles.footerText, { color: colors.textSecondary }]}>Car AI v2.0</Text>
-            <Text style={[styles.footerSub, { color: colors.textMuted }]}>100% Offline Mode</Text>
+          {/* Footer */}
+          <View style={[styles.footer, { borderTopColor: colors.cardBorder }]}>
+            <Text style={[styles.footerText, { color: colors.textMuted }]}>Car AI v2.0 · Offline</Text>
           </View>
         </View>
       </View>
@@ -166,94 +185,85 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    backgroundColor: 'rgba(0,0,0,0.45)',
   },
   backdrop: {
     position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
+    top: 0, bottom: 0, left: 0, right: 0,
   },
   drawer: {
-    width: '80%',
-    maxWidth: 320,
+    width: '78%',
+    maxWidth: 310,
     borderRightWidth: 1,
-    paddingHorizontal: 16,
-    height: '100%',
-    shadowColor: '#000',
-    shadowOffset: { width: 4, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 16,
+    flex: 1,
   },
-  profileCard: {
+  drawerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    marginBottom: 16,
+  },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  brandName: {
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+  },
+  profileRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    padding: 12,
     borderRadius: 14,
     borderWidth: 1,
-    marginBottom: 10,
+    padding: 12,
+    marginHorizontal: 14,
+    marginBottom: 14,
   },
   avatarCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
-    fontSize: 18,
-    fontWeight: '700',
     color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
   },
-  profileInfo: {
-    flex: 1,
-  },
-  userName: {
+  profileInfo: { flex: 1 },
+  profileName: {
     fontSize: 14,
     fontWeight: '700',
   },
-  userEmail: {
-    fontSize: 11,
+  profileEmail: {
+    fontSize: 12,
+    marginTop: 1,
   },
   actionRow: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 12,
+    paddingHorizontal: 14,
+    marginBottom: 14,
   },
-  authBtn: {
+  actionBtn: {
     flex: 1,
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingVertical: 9,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-  },
-  authBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  themeToggleBtn: {
-    flex: 1,
-    borderWidth: 1,
     borderRadius: 10,
+    borderWidth: 1,
     paddingVertical: 9,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
   },
-  themeToggleText: {
+  actionBtnText: {
     fontSize: 12,
     fontWeight: '600',
-  },
-  divider: {
-    height: 1,
-    marginBottom: 14,
   },
   newChatBtn: {
     flexDirection: 'row',
@@ -261,7 +271,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     borderRadius: 12,
-    paddingVertical: 12,
+    paddingVertical: 13,
+    marginHorizontal: 14,
     marginBottom: 20,
   },
   newChatText: {
@@ -269,55 +280,48 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
-  sectionHeader: {
-    fontSize: 12,
+  sectionLabel: {
+    fontSize: 10,
     fontWeight: '700',
-    marginBottom: 10,
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    paddingHorizontal: 18,
+    marginBottom: 8,
   },
-  chatsList: {
+  historyList: {
     flex: 1,
+    paddingHorizontal: 14,
   },
-  emptyChatsText: {
-    fontSize: 12,
+  emptyText: {
+    fontSize: 13,
     textAlign: 'center',
     marginTop: 20,
   },
-  chatItemRow: {
+  historyRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
     borderRadius: 10,
-    paddingHorizontal: 10,
+    borderWidth: 1,
+    paddingHorizontal: 12,
     paddingVertical: 10,
-    marginBottom: 8,
+    marginBottom: 6,
   },
-  chatTitleArea: {
+  historyTitleArea: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginRight: 8,
+    gap: 8,
   },
-  chatTitleText: {
+  historyTitle: {
     fontSize: 13,
-  },
-  deleteBtn: {
-    padding: 4,
+    flex: 1,
   },
   footer: {
-    paddingTop: 12,
     borderTopWidth: 1,
-    alignItems: 'center',
+    paddingTop: 14,
+    paddingHorizontal: 18,
+    marginTop: 8,
   },
   footerText: {
     fontSize: 11,
-    fontWeight: '700',
   },
-  footerSub: {
-    fontSize: 10,
-    marginTop: 2,
-  }
 });
