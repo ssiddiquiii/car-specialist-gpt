@@ -133,7 +133,3 @@ npx expo run:android
 2. **Cloud Database Sync:** When network connectivity is active, user profiles, preference logs, and conversation histories synchronize with MongoDB Atlas. When offline, the mobile app operates continuously using local storage.
 
 ---
-
-## Project Status & Copyright
-
-Copyright © Car Specialist AI. All Rights Reserved.
