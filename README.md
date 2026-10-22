@@ -1,55 +1,44 @@
 # Car Specialist AI
 
-> **Edge-First Domain SLM & Hybrid Local Inference Architecture**  
-> An automotive diagnostic AI powered by a fine-tuned **Google Gemma 4 (2B)** model. Engineered to run **100% offline on mobile hardware** via native C++ bindings (`llama.cpp` / `libllama.so`) and **locally on-premises** via an embedded web daemon—eliminating recurring cloud LLM API costs, privacy exposure, and connectivity failures.
+A car diagnostic assistant built on a fine-tuned **Google Gemma 4 (2B)** model. It runs **100% offline on Android** (using native C++ `llama.cpp` bindings) and **locally on the web** via an embedded server—meaning zero cloud API bills, no internet needed in repair garages or basements, and complete data privacy.
 
 ---
 
-## ⚡ Quick Access & Evaluation Links
+## 🏎️ Project Overview & Problem Solved
 
-- 📱 **Pre-Compiled Android APK:** [Download Standalone APK](https://expo.dev/artifacts/eas/nWLQxaqpVZAjTieNEhACBiZvBNBSwWZ_tjrMthynwG0.apk)  
-  *(Ready-to-test build. Initial launch streams weights; all subsequent inference runs 100% offline in Airplane Mode).*
-- 🤗 **Hugging Face Model Repository:** [ssiddiquii/car-repair-gemma-gguf](https://huggingface.co/ssiddiquii/car-repair-gemma-gguf)  
-  *(Quantized GGUF Q4_K_M weights optimized for edge CPU and constrained RAM).*
-- 💻 **Web Application:** `http://localhost:5173` *(Local React + Vite UI backed by FastAPI & local llama-server)*
+Drivers and mechanics often need troubleshooting help in places without reliable cell service—underground parking lots, highway shoulders, or remote garages. Cloud AI models (like ChatGPT or Claude) fail in these dead zones and cost money per query.
 
----
+**Car Specialist AI** provides a practical two-part solution:
 
-## 🏎️ Engineering Overview & Problem Statement
-
-Modern automotive troubleshooting often takes place in **zero-connectivity dead zones** such as underground parking garages, remote highways, or rural workshops where cloud-hosted LLMs fail completely. Furthermore, commercial LLM APIs introduce recurring token billing, unpredictable cloud latency, and telemetry privacy concerns.
-
-**Car Specialist AI** solves this through a **Hybrid Edge-Cloud Architecture**:
-
-| Dimension | 📱 Android Mobile Application | 💻 Web Application |
+| Feature | 📱 Android App | 💻 Web App |
 | :--- | :--- | :--- |
-| **Primary Objective** | **100% Offline Edge Diagnostics** in zero-connectivity environments | **Local On-Premises Diagnostic Workspace** with full telemetry logging |
-| **Runtime Engine** | Embedded native C++ `llama.cpp` via `llama.rn` (`libllama.so` in local RAM) | Local `llama-server.exe` daemon spawned by FastAPI on `localhost:8080` |
-| **Network Reliance (Chat)** | **Zero internet required.** Operates in full Airplane Mode | **Zero cloud LLM API costs.** Inference is 100% local on-device |
-| **Model Provisioning** | One-time Wi-Fi stream from Hugging Face (~1.68 GB) into app sandbox | Placed directly in `backend/` or loaded via local disk path |
-| **Inference Throughput** | ~9–11 tokens/sec directly on mobile device CPU | High-throughput multi-threaded CPU / CUDA generation |
-| **Human-in-the-Loop (RLHF)** | Local preference queue; synchronizes to MongoDB Atlas when online | Streams dual completions ($T=0.3$ vs $T=0.6$); logs preference to Atlas |
+| **Best Used For** | 100% offline diagnostics on the road or in dead zones | Local desktop workspace with conversation history & logging |
+| **Engine** | Native C++ `llama.cpp` via `llama.rn` (`libllama.so` in phone RAM) | Local `llama-server.exe` managed automatically by FastAPI |
+| **Internet Needed?** | **None.** Works fully in Airplane Mode | **None for AI.** Inference runs 100% locally on your machine |
+| **Model Setup** | Downloads once over Wi-Fi (~1.68 GB) into app storage | Place `.gguf` file into the `backend/` folder |
+| **Generation Speed** | ~9–11 tokens/sec on device CPU | Fast multi-threaded local CPU / GPU generation |
+| **User Feedback (RLHF)** | Saves ratings locally; syncs to MongoDB Atlas when back online | Streams two answers ($T=0.3$ vs $T=0.6$) and logs user choice |
 
 ---
 
-## 🧰 Consolidated Tech Stack
+## 🧰 Tech Stack
 
-| Layer | Technologies & Frameworks |
+| Component | Technologies |
 | :--- | :--- |
-| **Core ML & Fine-Tuning** | Google Gemma 4 (2B) (`gemma-4-e2b-it`), Unsloth, QLoRA (4-bit), Kaggle & Google Colab Cloud GPUs |
-| **Model Evaluation** | **DeepEval** Framework, 54 Golden Domain Diagnostic Q&A pairs (Relevancy & Correctness) |
-| **Edge & Local Inference** | `llama.cpp`, GGUF (Q4_K_M quantization), `llama.rn` (native C++ JNI / `libllama.so`), `llama-server` multi-slot daemon |
-| **Backend & Streaming API** | FastAPI (Python 3.10+), Uvicorn, Async Server-Sent Events (SSE), HTTPX async client |
-| **Frontend & Mobile** | React 18, Vite, React Native (Expo bare workflow), Zustand state management, AsyncStorage |
-| **Storage & Cloud Sync** | MongoDB Atlas (`preference_logs`, `conversations`), Motor async driver, PyMongo |
+| **Model & Training** | Google Gemma 4 (2B) (`gemma-4-e2b-it`), Unsloth, QLoRA (4-bit), Kaggle & Colab GPUs |
+| **Evaluation** | **DeepEval** (Answer Relevancy & Correctness on 54 golden test pairs) |
+| **Inference Engines** | `llama.cpp`, GGUF (Q4_K_M quantization), `llama.rn` (Android C++ JNI), `llama-server` |
+| **Backend API** | FastAPI (Python 3.10+), Uvicorn, Server-Sent Events (SSE) for real-time streaming |
+| **Frontend & Mobile** | React 18, Vite, React Native (Expo bare workflow), Zustand, AsyncStorage |
+| **Database** | MongoDB Atlas (`preference_logs`, `conversations`), Motor async driver |
 
 ---
 
-## 📊 Fine-Tuning & Evaluation Benchmark (DeepEval)
+## 📊 Fine-Tuning & Evaluation (DeepEval)
 
-The base model was fine-tuned on cloud GPUs (**Kaggle & Google Colab**) using **Unsloth** with **4-bit QLoRA** on a domain dataset of automotive diagnostic Q&A pairs (OBD-II codes, sensor telemetry, and fault-isolation trees). 
+We fine-tuned the model on **Kaggle and Google Colab** using **Unsloth** (4-bit QLoRA) on automotive Q&A data (OBD-II trouble codes, sensor telemetry, and step-by-step repair guides).
 
-Pre- and post-fine-tuning checkpoints were evaluated against a golden benchmark test suite (**54 domain diagnostic Q&A pairs**) using the **DeepEval** LLM evaluation framework. **Version 7 (1 Epoch, LR=1e-5, LoRA $r=8$)** was identified as the definitive **sweet spot**—increasing automotive relevancy to **98.0%** while preserving baseline correctness and avoiding catastrophic forgetting:
+We used **DeepEval** to benchmark the model against a test suite of **54 diagnostic questions** before and after training. **Version 7 (1 Epoch, LR=1e-5)** hit the sweet spot—pushing automotive relevancy to **98.0%** while keeping baseline correctness steady and avoiding catastrophic forgetting:
 
 ```text
 ========================================================================
@@ -69,94 +58,90 @@ VERDICT: MARGINAL / FLAT (Optimal Sweet Spot)
 ========================================================================
 ```
 
-### Edge Quantization Footprint
+### Quantization & Memory Footprint
 
-| Metric / Resource | Base Model (FP16) | Quantized Model (Q4_K_M) | Edge Optimization Impact |
+| Metric | Base Model (FP16) | Quantized (Q4_K_M GGUF) | Real-World Impact |
 | :--- | :--- | :--- | :--- |
-| **Disk Footprint** | ~4.8 GB | **~1.68 GB** | **65% storage reduction** for mobile distribution |
-| **RAM Utilization** | ~4.8 GB | **~1.6 GB** | **66% memory reduction** (fits in consumer device RAM) |
-| **Inference Generation** | Cloud API required | **~9–11 tokens/sec** | Real-time generation directly on mobile CPU |
-| **Connectivity Dependency**| Continuous Internet | **Zero (100% Offline)** | Operates in complete Airplane Mode |
+| **Disk Size** | ~4.8 GB | **~1.68 GB** | 65% smaller download size for mobile users |
+| **RAM Used** | ~4.8 GB | **~1.6 GB** | Runs comfortably on regular Android phones |
+| **Speed** | Cloud API dependent | **~9–11 tokens/sec** | Real-time typing speed directly on mobile CPU |
+| **Internet Needed** | Continuous connection | **Zero (100% Offline)** | Works in full Airplane Mode |
 
 ---
 
-## 🛠️ System Architecture
+## 🛠️ Architecture
 
 ```mermaid
 flowchart TD
-    subgraph Model_Pipeline["1. Training & Distribution"]
-        RAW["Automotive Q&A Dataset<br/>(342-500 Pairs)"] --> KAGGLE["Kaggle & Colab Cloud GPUs<br/>(Unsloth + QLoRA 4-bit)"]
+    subgraph Model_Pipeline["1. Training & Quantization"]
+        RAW["Automotive Q&A Data<br/>(342-500 Pairs)"] --> KAGGLE["Kaggle & Colab GPUs<br/>(Unsloth + QLoRA 4-bit)"]
         KAGGLE --> EVAL["DeepEval Validation<br/>(Relevancy: 98%, Correctness: 50%)"]
         EVAL --> GGUF["llama.cpp Quantization<br/>(Q4_K_M GGUF ~1.68 GB)"]
         GGUF --> HF["Hugging Face Hub<br/>(ssiddiquii/car-repair-gemma-gguf)"]
     end
 
-    subgraph Web_Stack["2. Web Stack (Local On-Premises Inference)"]
+    subgraph Web_Stack["2. Web Stack (Local Inference)"]
         VITE["React + Vite Frontend<br/>(Port 5173)"]
         FASTAPI["FastAPI Backend<br/>(Port 8000)"]
-        LLAMA_SRV["llama-server Daemon<br/>(Multi-Slot SSE, Port 8080)"]
+        LLAMA_SRV["llama-server Daemon<br/>(Port 8080)"]
 
         VITE <-->|Dual Stream SSE| FASTAPI
         FASTAPI <-->|Local Inference| LLAMA_SRV
     end
 
-    subgraph Mobile_Stack["3. Mobile Stack (On-Device Native C++)"]
+    subgraph Mobile_Stack["3. Mobile Stack (On-Device C++)"]
         EXPO["React Native Android APK"]
         STORE["Zustand + AsyncStorage"]
         LLAMA_RN["llama.rn C++ Engine<br/>(libllama.so in Phone RAM)"]
 
         EXPO --> STORE
-        EXPO <-->|100% Offline Edge Inference| LLAMA_RN
+        EXPO <-->|100% Offline Inference| LLAMA_RN
     end
 
-    subgraph Storage_Cloud["4. Cloud State & Human Alignment"]
+    subgraph Storage_Cloud["4. Cloud State & RLHF Feedback"]
         MONGO[("MongoDB Atlas<br/>preference_logs collection")]
     end
 
     FASTAPI -->|Syncs Auth & Preferences| MONGO
     STORE -.->|Syncs When Online| MONGO
-    HF -->|One-Time Model Stream| LLAMA_SRV
+    HF -->|One-Time Model Download| LLAMA_SRV
     HF -->|One-Time Setup Download| LLAMA_RN
 ```
 
 ---
 
-## 💻 How to Setup in Web
+## 💻 Web Setup Guide
 
-Follow these steps to run the complete local web stack (FastAPI backend + llama-server + Vite frontend).
+Here is how to run the web version locally on your computer.
 
-### Step 1: Clone the Repository
+### 1. Clone the Repo
 ```bash
 git clone https://github.com/ssiddiquiii/car-specialist-gpt.git
 cd car-specialist-gpt
 ```
 
-### Step 2: Download Model Weights & Place in `backend/`
-The quantized model weights are hosted on Hugging Face:
+### 2. Download Model & Place in `backend/`
+The quantized model file is hosted on Hugging Face:
 1. Download **`gemma-4-e2b-it.Q4_K_M.gguf`** (~1.68 GB) from:  
    👉 **[ssiddiquii/car-repair-gemma-gguf](https://huggingface.co/ssiddiquii/car-repair-gemma-gguf)**
-2. Place the downloaded `.gguf` file directly into the **`backend/`** directory:
+2. Save it directly inside the `backend/` folder:
    ```text
    car-specialist-gpt/
    ├── backend/
-   │   ├── gemma-4-e2b-it.Q4_K_M.gguf   <-- Place downloaded GGUF file here
+   │   ├── gemma-4-e2b-it.Q4_K_M.gguf   <-- Put downloaded file here
    │   ├── llama-bin/
    │   ├── main.py
-   │   ├── requirements.txt
    │   └── .env
    ├── frontend/
    └── start.bat
    ```
-*(If you save the model in a custom path or under a different name, specify its location via `MODEL_PATH` in `backend/.env`).*
 
-### Step 3: Configure Environment Variables
-Copy the template and verify your configuration:
+### 3. Setup Environment Variables
 ```bash
 cd backend
-copy .env.example .env    # On Windows
-# cp .env.example .env    # On macOS/Linux
+copy .env.example .env    # On Windows (macOS/Linux: cp .env.example .env)
 ```
-Inside `backend/.env`:
+Default values inside `backend/.env`:
 ```env
 MONGO_URI=mongodb+srv://<username>:<password>@cluster0.mongodb.net/car_specialist_gpt
 DB_NAME=car_specialist_gpt
@@ -165,45 +150,41 @@ MODEL_NAME=gemma-4-e2b-it
 APP_VERSION=1.0.0
 ```
 
-### Step 4: Install Dependencies & Run
+### 4. Run the App
 
-#### Option A: 1-Click Runner (Windows)
-Double-click [`start.bat`](start.bat) from the root directory. It will automatically:
-- Activate the backend virtual environment and install dependencies.
-- Spawn `llama-server.exe` on port `8080` with the GGUF model memory-mapped.
-- Launch FastAPI on port `8000`.
-- Start Vite dev server on port `5173` and launch your browser.
+**Option A — Quick Runner (Windows):**  
+Double-click [`start.bat`](start.bat) in the project root. It starts backend, frontend, and opens `http://localhost:5173`.
 
-#### Option B: Manual Execution
-**Terminal 1 — Backend:**
+**Option B — Manual Terminal:**
 ```bash
+# Terminal 1: Backend
 cd backend
 python -m venv venv
 .\venv\Scripts\activate            # Windows (macOS/Linux: source venv/bin/activate)
 pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
 ```
-> *On startup, FastAPI automatically detects `MODEL_PATH`, launches `llama-server.exe` on port `8080`, and prepares dual-temperature inference slots.*
+*(FastAPI will automatically start `llama-server.exe` on port 8080 with the model loaded).*
 
-**Terminal 2 — Frontend:**
 ```bash
+# Terminal 2: Frontend
 cd frontend
 npm install
 npm run dev
 ```
-Access the application at: **[http://localhost:5173](http://localhost:5173)**.
+Open **[http://localhost:5173](http://localhost:5173)** in your browser.
 
 ---
 
-## 📱 How to Setup in Mobile (Android)
+## 📱 Mobile Setup (Android)
 
-### Option 1: Install Pre-Compiled Standalone APK (Fastest Evaluation)
-Evaluators can test the complete edge inference experience without installing Android Studio, NDK, or native build tools:
-1. Download the **[Pre-Compiled APK](https://expo.dev/artifacts/eas/nWLQxaqpVZAjTieNEhACBiZvBNBSwWZ_tjrMthynwG0.apk)** directly onto your Android device.
-2. Open and install the `.apk` package.
+### Option 1: Install Pre-Built APK (Fastest)
+If you just want to test the app without setting up Android Studio or NDK:
+1. Download the **[Pre-Compiled APK](https://expo.dev/artifacts/eas/nWLQxaqpVZAjTieNEhACBiZvBNBSwWZ_tjrMthynwG0.apk)** directly on your Android phone.
+2. Install and launch it.
 
-### Option 2: Local Native Development Build
-> **⚠️ Note on Expo Go:** Standard Expo Go cannot run this application because `llama.rn` requires custom compiled native C++ shared libraries (`libllama.so`). A native build is required:
+### Option 2: Build from Source
+> **Note:** Standard Expo Go cannot run this app because `llama.rn` requires custom compiled C++ binaries (`libllama.so`). You must run a native build:
 
 ```bash
 cd mobile
@@ -211,20 +192,21 @@ npm install
 npx expo run:android
 ```
 
-### 📶 Offline Verification Walkthrough
-1. **Initial Provisioning (Online):** Open the application while connected to Wi-Fi. Authenticate and allow the app to complete its one-time streaming of model weights (~1.68 GB) into local sandboxed storage.
-2. **Switch to Airplane Mode:** Turn off Wi-Fi and Cellular Data.
-3. **Run Diagnostics:** Submit an automotive diagnostic query (e.g., *"Engine vibrates vigorously at 2000 RPM with P0300 code"*).
-4. **Edge Generation:** The response streams in real time (~9–11 tokens/sec) generated entirely by the on-device CPU via `libllama.so` with zero network calls.
-5. **Background Sync:** Select your preferred response (RLHF rating). When internet connectivity is restored later, ratings automatically sync to MongoDB Atlas.
+### How to Test 100% Offline Mode
+1. **First-time setup:** Open the app with Wi-Fi on. Log in and let it finish the one-time model weight download (~1.68 GB).
+2. **Turn on Airplane Mode:** Turn off Wi-Fi and mobile data.
+3. **Ask a car problem:** Type a question like *"My 2018 Civic has a high squeal when braking at low speed"*.
+4. **Offline generation:** The text streams in real-time (~9–11 tokens/sec), running purely on your phone CPU.
+5. **Sync feedback:** Pick your preferred response. When you reconnect to Wi-Fi later, your preference logs sync to MongoDB Atlas automatically.
 
 ---
 
 ## 👥 Authors & Acknowledgments
 
-- **Lead Engineer:** Sameed Siddiqui
+- **Developer:** Sameed Siddiqui
 - **Base Model:** Google Gemma 4 (2B) (`google/gemma-4-E2B`)
-- **Fine-Tuning Framework:** Unsloth, QLoRA, Kaggle & Google Colab Cloud GPUs
-- **Evaluation Benchmark:** DeepEval Framework
-- **Edge Runtimes:** `llama.cpp` by Georgi Gerganov & `llama.rn`
+- **Training Stack:** Unsloth, QLoRA, Kaggle & Google Colab Cloud GPUs
+- **Evaluation:** DeepEval Framework
+- **Runtimes:** `llama.cpp` by Georgi Gerganov & `llama.rn`
+
 
