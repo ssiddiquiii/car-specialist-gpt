@@ -1,7 +1,7 @@
 # Car Specialist AI
 
 > **Edge-First Domain SLM & Hybrid Local Inference Architecture**  
-> An automotive diagnostic AI powered by a fine-tuned **Google Gemma 2B** model. Engineered to run **100% offline on mobile hardware** via native C++ bindings (`llama.cpp` / `libllama.so`) and **locally on-premises** via an embedded web daemon—eliminating recurring cloud LLM API costs, privacy exposure, and connectivity failures.
+> An automotive diagnostic AI powered by a fine-tuned **Google Gemma 4 (2B)** model. Engineered to run **100% offline on mobile hardware** via native C++ bindings (`llama.cpp` / `libllama.so`) and **locally on-premises** via an embedded web daemon—eliminating recurring cloud LLM API costs, privacy exposure, and connectivity failures.
 
 ---
 
@@ -17,7 +17,7 @@
 
 ## 🏎️ Engineering Overview & Problem Statement
 
-Modern automotive troubleshooting often takes place in **zero-connectivity dead zones**—such as underground parking garages, remote highways, or rural workshops—where cloud-hosted LLMs fail completely. Furthermore, commercial LLM APIs introduce recurring token billing, unpredictable cloud latency, and telemetry privacy concerns.
+Modern automotive troubleshooting often takes place in **zero-connectivity dead zones** such as underground parking garages, remote highways, or rural workshops where cloud-hosted LLMs fail completely. Furthermore, commercial LLM APIs introduce recurring token billing, unpredictable cloud latency, and telemetry privacy concerns.
 
 **Car Specialist AI** solves this through a **Hybrid Edge-Cloud Architecture**:
 
@@ -36,7 +36,7 @@ Modern automotive troubleshooting often takes place in **zero-connectivity dead 
 
 | Layer | Technologies & Frameworks |
 | :--- | :--- |
-| **Core ML & Fine-Tuning** | Google Gemma 2B (`gemma-4-e2b-it`), Unsloth, QLoRA (4-bit), Kaggle & Google Colab Cloud GPUs |
+| **Core ML & Fine-Tuning** | Google Gemma 4 (2B) (`gemma-4-e2b-it`), Unsloth, QLoRA (4-bit), Kaggle & Google Colab Cloud GPUs |
 | **Model Evaluation** | **DeepEval** Framework, 54 Golden Domain Diagnostic Q&A pairs (Relevancy & Correctness) |
 | **Edge & Local Inference** | `llama.cpp`, GGUF (Q4_K_M quantization), `llama.rn` (native C++ JNI / `libllama.so`), `llama-server` multi-slot daemon |
 | **Backend & Streaming API** | FastAPI (Python 3.10+), Uvicorn, Async Server-Sent Events (SSE), HTTPX async client |
@@ -223,7 +223,7 @@ npx expo run:android
 ## 👥 Authors & Acknowledgments
 
 - **Lead Engineer:** Sameed Siddiqui
-- **Base Model:** Google Gemma 2B (`google/gemma-4-E2B`)
+- **Base Model:** Google Gemma 4 (2B) (`google/gemma-4-E2B`)
 - **Fine-Tuning Framework:** Unsloth, QLoRA, Kaggle & Google Colab Cloud GPUs
 - **Evaluation Benchmark:** DeepEval Framework
 - **Edge Runtimes:** `llama.cpp` by Georgi Gerganov & `llama.rn`
