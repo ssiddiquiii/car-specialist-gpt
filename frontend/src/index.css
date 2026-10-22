@@ -1,42 +1,42 @@
 @import "tailwindcss";
 
 /* ═══════════════════════════════════════════════════════════
-   LIGHT THEME  (default — Claude-inspired warm off-white)
+   LIGHT THEME  (Modern Clean Slate & Cobalt)
 ═══════════════════════════════════════════════════════════ */
 :root {
   /* Surfaces */
-  --bg-base:        #F5F0E8;      /* warm parchment — Claude's page bg  */
-  --bg-card:        #FFFFFF;      /* pure white cards                   */
-  --bg-surface:     #EDE8DF;      /* slightly darker cream              */
-  --bg-input:       #FFFFFF;      /* input background                   */
-  --bg-nav:         rgba(245,240,232,0.9);
+  --bg-base:        #F8FAFC;      /* clean modern slate canvas */
+  --bg-card:        #FFFFFF;      /* pure white cards */
+  --bg-surface:     #F1F5F9;      /* crisp cool slate surface */
+  --bg-input:       #FFFFFF;      /* input background */
+  --bg-nav:         rgba(248, 250, 252, 0.92);
 
   /* Borders */
-  --border-subtle:  #E4DDD2;      /* warm light gray                    */
-  --border-strong:  #C9C2B6;      /* darker warm gray                   */
-  --border-focus:   #1C1917;      /* near-black on focus                */
+  --border-subtle:  #E2E8F0;      /* subtle modern slate border */
+  --border-strong:  #CBD5E1;      /* distinct slate border */
+  --border-focus:   #2563EB;      /* cobalt blue on focus */
 
   /* Text */
-  --text-primary:   #1C1917;      /* deep charcoal-brown                */
-  --text-secondary: #6B6460;      /* warm mid-gray                      */
-  --text-muted:     #9C9890;      /* light warm gray                    */
-  --text-placeholder: #AEAAA3;
+  --text-primary:   #0F172A;      /* deep obsidian slate */
+  --text-secondary: #475569;      /* balanced neutral slate */
+  --text-muted:     #94A3B8;      /* muted slate */
+  --text-placeholder: #94A3B8;
 
-  /* Accent — automotive orange (warm, not garish) */
-  --accent:         #C85F3A;      /* slightly muted orange for light bg */
-  --accent-hover:   #A84C2E;
-  --accent-subtle:  rgba(200,95,58,0.08);
-  --accent-subtle2: rgba(200,95,58,0.15);
+  /* Accent — Precision Cobalt Blue */
+  --accent:         #2563EB;      /* modern tech electric cobalt */
+  --accent-hover:   #1D4ED8;
+  --accent-subtle:  rgba(37, 99, 235, 0.08);
+  --accent-subtle2: rgba(37, 99, 235, 0.15);
 
-  /* Primary button (Claude-style: near black) */
-  --btn-dark-bg:    #1C1917;
-  --btn-dark-hover: #2C2A27;
-  --btn-dark-text:  #F5F0E8;
+  /* Primary button */
+  --btn-dark-bg:    #0F172A;
+  --btn-dark-hover: #1E293B;
+  --btn-dark-text:  #FFFFFF;
 
   /* Misc */
-  --shadow-sm:  0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-md:  0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
-  --shadow-lg:  0 12px 40px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.06);
+  --shadow-sm:  0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.03);
+  --shadow-md:  0 4px 16px rgba(15, 23, 42, 0.06), 0 2px 4px rgba(15, 23, 42, 0.03);
+  --shadow-lg:  0 12px 36px rgba(15, 23, 42, 0.08), 0 4px 12px rgba(15, 23, 42, 0.04);
   --radius-sm:  8px;
   --sidebar-w: 260px;
 }
@@ -139,33 +139,33 @@
    DARK THEME  (toggle — rich near-black)
 ═══════════════════════════════════════════════════════════ */
 [data-theme="dark"] {
-  --bg-base:        #0E0E10;
-  --bg-card:        #18181C;
-  --bg-surface:     #1F1F24;
-  --bg-input:       #18181C;
-  --bg-nav:         rgba(14,14,16,0.9);
+  --bg-base:        #0B0F17;      /* deep obsidian space */
+  --bg-card:        #111827;      /* slate dark card */
+  --bg-surface:     #1E293B;      /* elevated slate surface */
+  --bg-input:       #111827;
+  --bg-nav:         rgba(11, 15, 23, 0.92);
 
-  --border-subtle:  rgba(255,255,255,0.08);
-  --border-strong:  rgba(255,255,255,0.14);
-  --border-focus:   rgba(255,255,255,0.6);
+  --border-subtle:  rgba(255, 255, 255, 0.08);
+  --border-strong:  rgba(255, 255, 255, 0.16);
+  --border-focus:   #3B82F6;
 
-  --text-primary:   #F0EDE8;
-  --text-secondary: #8C8880;
-  --text-muted:     #5C5A56;
-  --text-placeholder: #4C4A46;
+  --text-primary:   #F8FAFC;      /* bright crisp slate */
+  --text-secondary: #94A3B8;      /* muted silver slate */
+  --text-muted:     #64748B;
+  --text-placeholder: #475569;
 
-  --accent:         #E8683A;
-  --accent-hover:   #F07840;
-  --accent-subtle:  rgba(232,104,58,0.10);
-  --accent-subtle2: rgba(232,104,58,0.18);
+  --accent:         #3B82F6;      /* electric sapphire / cobalt */
+  --accent-hover:   #60A5FA;
+  --accent-subtle:  rgba(59, 130, 246, 0.12);
+  --accent-subtle2: rgba(59, 130, 246, 0.22);
 
-  --btn-dark-bg:    #E8683A;
-  --btn-dark-hover: #F07840;
+  --btn-dark-bg:    #3B82F6;
+  --btn-dark-hover: #2563EB;
   --btn-dark-text:  #FFFFFF;
 
-  --shadow-sm:  0 1px 3px rgba(0,0,0,0.3);
-  --shadow-md:  0 4px 16px rgba(0,0,0,0.4);
-  --shadow-lg:  0 16px 60px rgba(0,0,0,0.5);
+  --shadow-sm:  0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-md:  0 4px 16px rgba(0, 0, 0, 0.45);
+  --shadow-lg:  0 16px 48px rgba(0, 0, 0, 0.55);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -396,23 +396,24 @@ textarea:focus      { outline: none; }
   min-height: 100vh;
   background: var(--bg-base);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px 20px;
+  padding: 20px 16px;
 }
 .auth-card {
   width: 100%;
-  max-width: 380px;
+  max-width: 360px;
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
-  border-radius: 16px;
-  padding: 40px 36px;
-  box-shadow: var(--shadow-lg);
+  border-radius: 14px;
+  padding: 24px 24px 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
 }
 .auth-divider {
   position: relative;
   text-align: center;
-  margin: 20px 0;
+  margin: 14px 0;
 }
 .auth-divider::before {
   content: '';
@@ -426,8 +427,8 @@ textarea:focus      { outline: none; }
 .auth-divider span {
   position: relative;
   background: var(--bg-card);
-  padding: 0 12px;
-  font-size: 12px;
+  padding: 0 10px;
+  font-size: 11.5px;
   color: var(--text-muted);
 }
 

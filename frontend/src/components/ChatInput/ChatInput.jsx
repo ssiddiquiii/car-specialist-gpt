@@ -37,17 +37,17 @@ function ChatInput({ onSend, disabled = false, placeholder = "Ask me anything ab
   };
 
   return (
-    <div style={{ padding: "12px 16px 16px", borderTop: "1px solid var(--border-subtle)", background: "var(--bg-base)" }}>
+    <div style={{ padding: "8px 16px 20px", borderTop: "none", background: "transparent" }}>
       <div style={{
         display: "flex",
         alignItems: "flex-end",
         gap: "10px",
         background: "var(--bg-card)",
         border: "1px solid var(--border-strong)",
-        borderRadius: "var(--radius-lg)",
-        padding: "10px 10px 10px 16px",
-        boxShadow: "var(--shadow-md)",
-        transition: "border-color 0.15s ease",
+        borderRadius: "22px",
+        padding: "10px 12px 10px 18px",
+        boxShadow: "0 6px 24px rgba(0,0,0,0.06)",
+        transition: "border-color 0.15s ease, box-shadow 0.15s ease",
         maxWidth: "760px",
         margin: "0 auto",
       }}>
@@ -99,11 +99,7 @@ function ChatInput({ onSend, disabled = false, placeholder = "Ask me anything ab
       </div>
 
       <p style={{ textAlign: "center", fontSize: "11px", color: "var(--text-muted)", marginTop: "8px" }}>
-        Press{" "}
-        <kbd style={{ background: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderRadius: "4px", padding: "1px 5px", fontSize: "10.5px", fontFamily: "inherit" }}>Enter</kbd>
-        {" "}to send ·{" "}
-        <kbd style={{ background: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderRadius: "4px", padding: "1px 5px", fontSize: "10.5px", fontFamily: "inherit" }}>Shift+Enter</kbd>
-        {" "}for new line
+        Beta Preview · Outputs are experimental for testing and should be verified with a certified mechanic.
       </p>
     </div>
   );

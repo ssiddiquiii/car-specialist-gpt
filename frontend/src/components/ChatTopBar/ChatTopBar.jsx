@@ -42,11 +42,11 @@ function ChatTopBar() {
   return (
     <header style={{
       height: "56px",
-      background: "var(--bg-card)",
-      borderBottom: "1px solid var(--border-subtle)",
+      background: "transparent",
+      borderBottom: "none",
       display: "flex",
       alignItems: "center",
-      padding: "0 12px",
+      padding: "0 16px",
       gap: "10px",
       flexShrink: 0,
       zIndex: 10,

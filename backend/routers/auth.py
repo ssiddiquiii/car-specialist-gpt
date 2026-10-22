@@ -52,6 +52,13 @@ async def get_me(token: str):
         raise HTTPException(status_code=401, detail="Invalid token")
         
     user_id = payload.get("sub")
+    if user_id and user_id.startswith("guest_"):
+        return {
+            "id": user_id,
+            "name": "Guest Reviewer",
+            "email": "guest@local",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
     users_col = get_users_collection()
     db_user = await users_col.find_one({"_id": user_id})
     if not db_user:

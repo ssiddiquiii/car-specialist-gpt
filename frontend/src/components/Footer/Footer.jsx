@@ -28,7 +28,7 @@ function Footer() {
             <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
               <div style={{
                 width: 32, height: 32, borderRadius: "8px",
-                background: "linear-gradient(135deg, #e8683a, #d4522a)",
+                background: "linear-gradient(135deg, var(--accent), var(--accent-hover))",
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -38,23 +38,23 @@ function Footer() {
                 </svg>
               </div>
               <span style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.02em" }}>
-                Car Specialist <span style={{ color: "#e8683a" }}>GPT</span>
+                Car Specialist <span style={{ color: "var(--accent)" }}>GPT</span>
               </span>
             </div>
-            <p style={{ fontSize: "13px", color: "var(--text-muted)", lineHeight: 1.7, maxWidth: "240px" }}>
-              AI-powered automotive assistant for instant diagnostics, repair guidance, and cost estimates.
+            <p style={{ fontSize: "13px", color: "var(--text-muted)", lineHeight: 1.7, maxWidth: "260px" }}>
+              100% offline edge automotive intelligence with dual-sample human preference alignment.
             </p>
             {/* Status pill */}
             <div style={{
-              display: "inline-flex", alignItems: "center", gap: "5px",
+              display: "inline-flex", alignItems: "center", gap: "6px",
               marginTop: "14px",
               background: "rgba(34,197,94,0.07)",
               border: "1px solid rgba(34,197,94,0.2)",
               borderRadius: "99px",
-              padding: "4px 10px",
+              padding: "4px 12px",
             }}>
-              <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#22c55e", display: "inline-block" }} />
-              <span style={{ fontSize: "11px", color: "#22c55e", fontWeight: 500 }}>Free during beta</span>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22c55e", display: "inline-block" }} />
+              <span style={{ fontSize: "11px", color: "#22c55e", fontWeight: 600 }}>Zero Cloud API Dependencies</span>
             </div>
           </div>
 
@@ -62,18 +62,17 @@ function Footer() {
           <div style={{ display: "flex", flexWrap: "wrap", gap: "40px" }}>
             {[
               {
-                heading: "Product",
+                heading: "Overview",
                 links: [
                   { label: "Features", href: "#features" },
-                  { label: "How it works", href: "#how-it-works" },
-                  { label: "About", href: "#about" },
+                  { label: "How It Works", href: "#how-it-works" },
                 ],
               },
               {
-                heading: "Legal",
+                heading: "Distribution",
                 links: [
-                  { label: "Privacy Policy", href: "#" },
-                  { label: "Terms of Service", href: "#" },
+                  { label: "Hugging Face Model", href: "https://huggingface.co/google/gemma-4-E2B" },
+                  { label: "Download Android APK", href: "https://expo.dev/artifacts/eas/nWLQxaqpVZAjTieNEhACBiZvBNBSwWZ_tjrMthynwG0.apk" },
                 ],
               },
             ].map((col) => (
@@ -93,7 +92,7 @@ function Footer() {
                     <li key={link.label}>
                       <a
                         href={link.href}
-                        style={{ fontSize: "13.5px", color: "var(--text-secondary)", transition: "color 0.15s" }}
+                        style={{ fontSize: "13px", color: "var(--text-secondary)", transition: "color 0.15s", textDecoration: "none" }}
                         onMouseEnter={e => e.target.style.color = "var(--text-primary)"}
                         onMouseLeave={e => e.target.style.color = "var(--text-secondary)"}
                       >
@@ -121,7 +120,7 @@ function Footer() {
             © {year} Car Specialist GPT. All rights reserved.
           </p>
           <p style={{ fontSize: "12.5px", color: "var(--text-muted)" }}>
-            Built with ❤️ · Powered by AI
+            Built by Sameed Siddiqui
           </p>
         </div>
       </div>

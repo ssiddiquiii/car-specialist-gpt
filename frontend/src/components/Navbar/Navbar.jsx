@@ -59,21 +59,24 @@ function Navbar() {
         </Link>
 
         {/* Center nav */}
-        <nav style={{ display: "flex", alignItems: "center", gap: "2px" }} className="nav-center">
+        <nav style={{ display: "flex", alignItems: "center", gap: "4px" }} className="nav-center">
           {[
             { label: "Features", href: "#features" },
-            { label: "How it works", href: "#how-it-works" },
-            { label: "About", href: "#about" },
+            { label: "Android App", href: "https://expo.dev/artifacts/eas/nWLQxaqpVZAjTieNEhACBiZvBNBSwWZ_tjrMthynwG0.apk", external: true },
+            { label: "Gemma 4", href: "https://huggingface.co/google/gemma-4-E2B", external: true },
           ].map(link => (
             <a
               key={link.label}
               href={link.href}
+              target={link.external ? "_blank" : undefined}
+              rel={link.external ? "noreferrer" : undefined}
               style={{
-                fontSize: "13.5px",
+                fontSize: "13px",
                 fontWeight: 500,
                 color: "var(--text-secondary)",
                 padding: "6px 12px",
                 borderRadius: "8px",
+                textDecoration: "none",
                 transition: "color 0.15s, background 0.15s",
               }}
               onMouseEnter={e => { e.target.style.color = "var(--text-primary)"; e.target.style.background = "var(--bg-surface)"; }}

@@ -142,10 +142,10 @@ function DualResponseCard() {
           </div>
           <div>
             <p style={{ fontSize: "12.5px", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
-              {isStreaming ? "Generating two responses..." : "Two responses generated"}
+              {isStreaming ? "Generating two answers..." : "Compare two answers"}
             </p>
             <p style={{ fontSize: "11px", color: "var(--text-muted)", margin: 0 }}>
-              {isStreaming ? "Please wait for options A and B to finish typing." : "Choose the better one — your choice helps improve the AI"}
+              {isStreaming ? "Options A and B are generating in parallel..." : "Pick the answer you find most clear and helpful"}
             </p>
           </div>
         </div>
@@ -201,14 +201,14 @@ function DualResponseCard() {
       {/* Dual cards */}
       <div style={{ display: "flex", gap: "12px", alignItems: "stretch", flexWrap: "wrap" }}>
         <ResponseCard
-          label="Response A"
+          label="Option A"
           response={dualResponse.response_a}
           onChoose={() => handleChoose("a")}
           isChosen={chosen === "a"}
           disabled={!!chosen || isStreaming}
         />
         <ResponseCard
-          label="Response B"
+          label="Option B"
           response={dualResponse.response_b}
           onChoose={() => handleChoose("b")}
           isChosen={chosen === "b"}

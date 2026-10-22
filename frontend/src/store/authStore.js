@@ -70,6 +70,19 @@ export const useAuthStore = create((set) => ({
     }
   },
 
+  guestLogin: () => {
+    const guestToken = "guest_reviewer_" + Math.random().toString(36).substring(2, 9);
+    localStorage.setItem("token", guestToken);
+    set({
+      token: guestToken,
+      user: { name: "Guest Reviewer", email: "guest@evaluator.local" },
+      isAuthenticated: true,
+      isLoading: false,
+      error: null,
+    });
+    return { success: true };
+  },
+
   logout: () => {
     localStorage.removeItem("token");
     set({ user: null, token: null, isAuthenticated: false, error: null });
