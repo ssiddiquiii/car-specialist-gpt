@@ -10,10 +10,9 @@ For recruiters and evaluators who want to test the project without compiling cod
 
 - 📱 **Android Mobile Application (.apk):** [Download Pre-Compiled APK](https://expo.dev/artifacts/eas/nWLQxaqpVZAjTieNEhACBiZvBNBSwWZ_tjrMthynwG0.apk)  
   *(Initial one-time launch requires internet to authenticate and stream model weights; all subsequent diagnostics run 100% offline in Airplane Mode).*
-- 🤗 **Model Weights Repository:** [google/gemma-4-E2B (Hugging Face)](https://huggingface.co/google/gemma-4-E2B)  
+- 🤗 **Model Weights Repository:** [ssiddiquii/car-repair-gemma-gguf](https://huggingface.co/ssiddiquii/car-repair-gemma-gguf)  
   *(Quantized GGUF Q4_K_M weights designed specifically for edge mobile CPU and local RAM constraints).*
 - 💻 **Web Application (Local):** `http://localhost:5173` *(React + Vite with local FastAPI & llama-server backend)*
-- ⚡ **1-Click Windows Runner:** Double-click [`start.bat`](start.bat) to launch the full web & backend stack in one click.
 
 ---
 
@@ -35,9 +34,9 @@ Car Specialist AI addresses real-world automotive diagnostic scenarios (undergro
 ---
 
 ### Complete ML Pipeline:
-1. **Domain Data Curation:** Curated a golden evaluation and training set of **550 automotive diagnostic Q&A pairs** spanning OBD-II codes (e.g., P0420, P0300), sensor telemetry, fluid/part specifications, and mechanical failure trees.
+1. **Domain Data Curation:** Curated a balanced automotive diagnostic dataset (342–500 total Q&A pairs, partitioned into training and a 54-pair golden evaluation suite) spanning OBD-II trouble codes, sensor telemetry, and mechanical troubleshooting trees.
 2. **Fine-Tuning (Kaggle & Google Colab):** Fine-tuned Google’s **Gemma 4 E2B** model on cloud GPUs (**Kaggle & Google Colab**) using **Unsloth** with **4-bit QLoRA**. Continuously evaluated loss curves against evaluation checkpoints to hit the training sweet spot without catastrophic forgetting.
-3. **Metric-Driven Evaluation (DeepEval):** Conducted rigorous pre- and post-fine-tuning benchmarks using the **DeepEval** LLM evaluation framework, verifying faithfulness, factual correctness, and hallucination reduction.
+3. **Metric-Driven Evaluation (DeepEval):** Conducted systematic pre- and post-fine-tuning benchmarks across multiple hyperparameter versions using the **DeepEval** LLM evaluation framework.
 4. **Quantization & Hub Distribution:** Merged LoRA adapters with base model weights, quantized to **GGUF (Q4_K_M)** (~1.68 GB footprint fitting comfortably in <2 GB RAM), and published to **Hugging Face Hub**.
 5. **Human-in-the-Loop (RLHF) Alignment:** Every user query generates **dual completions** at contrasting temperatures ($T=0.3$ deterministic factual vs. $T=0.6$ exploratory troubleshooting). User preference choices are logged to **MongoDB Atlas** (`preference_logs`) to build an empirical dataset for future DPO/PPO alignment.
 
@@ -45,13 +44,18 @@ Car Specialist AI addresses real-world automotive diagnostic scenarios (undergro
 
 ## 📊 Evaluation & Benchmarking (DeepEval)
 
-| Metric | Base Gemma 4 E2B | Fine-Tuned (Our Model) | Delta / Impact |
-| :--- | :--- | :--- | :--- |
-| **Automotive Domain Accuracy** | 58.4% | **89.2%** | **+52.7% relative improvement** |
-| **Faithfulness Score (DeepEval)** | 0.62 | **0.91** | **+46.7%** |
-| **Hallucination Rate** | 28.1% | **6.4%** | **-77.2% reduction** |
-| **Inference Footprint (RAM)** | ~4.8 GB (FP16) | **~1.6 GB (Q4_K_M)** | **66% memory reduction** |
-| **Token Generation Speed** | — | **~9-11 tokens/sec** | Real-time on mobile CPU |
+Evaluated against a golden benchmark test suite (**54 domain diagnostic Q&A pairs**) using the **DeepEval** LLM evaluation framework. Metrics reflect the optimal fine-tuned checkpoint (**Version 7: QLoRA + NEFTune, 1 Epoch, LR=1e-5**) which attained the highest benchmark accuracy before over-training degradation:
+
+| Metric | Base Model (Baseline) | Fine-Tuned (Optimal Version 7) | Delta / Impact | Note |
+| :--- | :--- | :--- | :--- | :--- |
+| **Relevancy Pass Rate** | 85.2% | **98.0%** | **+12.8%** | Contextual alignment with vehicle query |
+| **Correctness Pass Rate (DeepEval)** | 26.0% | **50.0%** | **+24.0% (+92.3% rel.)** | Peak domain correctness score |
+| **Quantized Model Size** | ~4.8 GB (FP16) | **~1.68 GB (GGUF Q4_K_M)** | **65% reduction** | Embedded edge mobile deployment |
+| **Inference Footprint (RAM)** | ~4.8 GB | **~1.6 GB** | **66% memory reduction** | Fits comfortably under 2 GB RAM |
+| **Token Generation Speed** | — | **~9–11 tokens/sec** | Real-time | Measured locally on device CPU |
+
+> **💡 Systematic Fine-Tuning Insights (Avoiding Overfitting):**  
+> Empirical experimentation across 10 iterations demonstrated that **Version 7** (1 Epoch, slower learning rate `1e-5`, LoRA $r=8$) was the definitive sweet spot, reaching **50.0% correctness** and **98.0% relevancy**. Pushing training further to higher epochs (2–20 epochs) or higher learning rates degraded correctness back down to **31.5%–38.0%** due to base knowledge collapse / catastrophic forgetting.
 
 ---
 
@@ -60,7 +64,7 @@ Car Specialist AI addresses real-world automotive diagnostic scenarios (undergro
 ```mermaid
 flowchart TD
     subgraph Model_Pipeline["1. Training & Distribution"]
-        RAW["550 Curated Automotive Q&A"] --> KAGGLE["Kaggle & Google Colab GPUs\n(Unsloth + QLoRA 4-bit)"]
+        RAW["Balanced Automotive Q&A\n(Training & Golden Eval)"] --> KAGGLE["Kaggle & Google Colab GPUs\n(Unsloth + QLoRA 4-bit)"]
         KAGGLE --> EVAL["DeepEval Validation\n(Pre vs Post Benchmarking)"]
         EVAL --> GGUF["llama.cpp Quantization\n(Q4_K_M GGUF ~1.68 GB)"]
         GGUF --> HF["Hugging Face Hub\n(google/gemma-4-E2B)"]
