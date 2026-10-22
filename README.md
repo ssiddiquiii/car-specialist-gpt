@@ -83,36 +83,36 @@ VERDICT: MARGINAL / FLAT (Optimal Sweet Spot)
 ```mermaid
 flowchart TD
     subgraph Model_Pipeline["1. Training & Distribution"]
-        RAW["Balanced Automotive Q&A\n(Training & Golden Eval)"] --> KAGGLE["Kaggle & Google Colab GPUs\n(Unsloth + QLoRA 4-bit)"]
-        KAGGLE --> EVAL["DeepEval Validation\n(Pre vs Post Benchmarking)"]
-        EVAL --> GGUF["llama.cpp Quantization\n(Q4_K_M GGUF ~1.68 GB)"]
-        GGUF --> HF["Hugging Face Hub\n(google/gemma-4-E2B)"]
+        RAW["Automotive Q&A Dataset<br/>(342-500 Pairs)"] --> KAGGLE["Kaggle & Colab Cloud GPUs<br/>(Unsloth + QLoRA 4-bit)"]
+        KAGGLE --> EVAL["DeepEval Validation<br/>(Relevancy: 98%, Correctness: 50%)"]
+        EVAL --> GGUF["llama.cpp Quantization<br/>(Q4_K_M GGUF ~1.68 GB)"]
+        GGUF --> HF["Hugging Face Hub<br/>(ssiddiquii/car-repair-gemma-gguf)"]
     end
 
     subgraph Web_Stack["2. Web Stack (Local On-Premises Inference)"]
-        VITE["React + Vite Frontend\n(Port 5173)"]
-        FASTAPI["FastAPI Backend\n(Port 8000)"]
-        LLAMA_SRV["llama-server.exe Daemon\n(Multi-Slot SSE, Port 8080)"]
+        VITE["React + Vite Frontend<br/>(Port 5173)"]
+        FASTAPI["FastAPI Backend<br/>(Port 8000)"]
+        LLAMA_SRV["llama-server Daemon<br/>(Multi-Slot SSE, Port 8080)"]
 
         VITE <-->|Dual Stream SSE| FASTAPI
-        FASTAPI <-->|Local Inference Slots| LLAMA_SRV
+        FASTAPI <-->|Local Inference| LLAMA_SRV
     end
 
     subgraph Mobile_Stack["3. Mobile Stack (On-Device Native C++)"]
         EXPO["React Native Android APK"]
         STORE["Zustand + AsyncStorage"]
-        LLAMA_RN["llama.rn C++ Engine\n(libllama.so in Phone RAM)"]
+        LLAMA_RN["llama.rn C++ Engine<br/>(libllama.so in Phone RAM)"]
 
         EXPO --> STORE
-        EXPO <-->|100% Offline (Airplane Mode)| LLAMA_RN
+        EXPO <-->|100% Offline Edge Inference| LLAMA_RN
     end
 
-    subgraph Storage_Cloud["4. Storage & Human Alignment"]
-        MONGO["MongoDB Atlas\n(preference_logs collection)"]
+    subgraph Storage_Cloud["4. Cloud State & Human Alignment"]
+        MONGO[("MongoDB Atlas<br/>preference_logs collection")]
     end
 
     FASTAPI -->|Syncs Auth & Preferences| MONGO
-    STORE -.->|Syncs when Online| MONGO
+    STORE -.->|Syncs When Online| MONGO
     HF -->|One-Time Model Stream| LLAMA_SRV
     HF -->|One-Time Setup Download| LLAMA_RN
 ```
