@@ -11,6 +11,7 @@ build/
 .env
 venv/
 .venv/
+.pytest_cache/
 
 # Node / Frontend
 node_modules/
