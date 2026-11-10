@@ -3,6 +3,7 @@ import time
 import asyncio
 import json
 import subprocess
+from contextlib import asynccontextmanager
 import requests as sync_requests
 import httpx
 from datetime import datetime, timezone
@@ -31,7 +32,59 @@ LLAMA_SERVER_EXE = os.path.join(os.path.dirname(__file__), "llama-bin", "llama-s
 LLAMA_API_URL = f"http://127.0.0.1:{LLAMA_SERVER_PORT}/v1/chat/completions"
 LOG_FILE_PATH = os.path.join(os.path.dirname(__file__), "llama-server.log")
 
-app = FastAPI(title="Car Specialist GPT — Local Backend (Streaming)")
+server_process = None
+log_file = None
+
+
+# ── Lifecycle (Lifespan Context Manager) ───────────────────────────────────────
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global server_process, log_file
+
+    if not os.path.exists(MODEL_PATH):
+        print(f"Notice: Model file not found at {MODEL_PATH}. Local AI server not started.")
+    elif not os.path.exists(LLAMA_SERVER_EXE):
+        print(f"Notice: llama-server.exe not found at {LLAMA_SERVER_EXE}. Local AI server not started.")
+    else:
+        print("Starting local llama-server in the background (CUDA enabled if available)...")
+        threads = str(max(1, (os.cpu_count() or 4) - 1))
+
+        command = [
+            LLAMA_SERVER_EXE,
+            "-m", MODEL_PATH,
+            "--port", LLAMA_SERVER_PORT,
+            "-c", "8192",          # Context window (divided by parallel slots)
+            "-t", threads,
+            "--parallel", "2"      # Allow 2 parallel inference slots
+        ]
+
+        log_file = open(LOG_FILE_PATH, "w")
+        server_process = subprocess.Popen(command, stdout=log_file, stderr=subprocess.STDOUT)
+
+        print("Waiting for local AI server to initialize (this may take 10-15 seconds)...")
+        for _ in range(30):
+            try:
+                res = sync_requests.get(f"http://127.0.0.1:{LLAMA_SERVER_PORT}/health", timeout=1)
+                if res.status_code == 200:
+                    print("Local AI Server is ONLINE and Ready!")
+                    break
+            except sync_requests.exceptions.RequestException:
+                pass
+            time.sleep(1)
+
+    yield
+
+    if server_process:
+        print("Shutting down local llama-server...")
+        server_process.terminate()
+        server_process.wait()
+    if log_file:
+        log_file.close()
+    await close_connection()
+
+
+app = FastAPI(title="Car Specialist GPT — Local Backend (Streaming)", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -49,64 +102,6 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(chats.router)
-
-server_process = None
-log_file = None
-
-
-# ── Lifecycle ────────────────────────────────────────────────────────────────
-
-@app.on_event("startup")
-async def startup_event():
-    global server_process, log_file
-
-    if not os.path.exists(MODEL_PATH):
-        print(f"ERROR: Model file not found at {MODEL_PATH}")
-        return
-
-    if not os.path.exists(LLAMA_SERVER_EXE):
-        print(f"ERROR: llama-server.exe not found at {LLAMA_SERVER_EXE}")
-        return
-
-    print("Starting local llama-server in the background (CUDA enabled if available)...")
-    threads = str(max(1, (os.cpu_count() or 4) - 1))
-
-    command = [
-        LLAMA_SERVER_EXE,
-        "-m", MODEL_PATH,
-        "--port", LLAMA_SERVER_PORT,
-        "-c", "8192",          # Context window (divided by parallel slots)
-        "-t", threads,
-        "--parallel", "2"      # Allow 2 parallel inference slots
-    ]
-
-    log_file = open(LOG_FILE_PATH, "w")
-    server_process = subprocess.Popen(command, stdout=log_file, stderr=subprocess.STDOUT)
-
-    print("Waiting for local AI server to initialize (this may take 10-15 seconds)...")
-    for _ in range(30):
-        try:
-            res = sync_requests.get(f"http://127.0.0.1:{LLAMA_SERVER_PORT}/health", timeout=1)
-            if res.status_code == 200:
-                print("Local AI Server is ONLINE and Ready!")
-                return
-        except sync_requests.exceptions.RequestException:
-            pass
-        time.sleep(1)
-
-    print(f"Warning: Local AI server may still be loading. Check {LOG_FILE_PATH}.")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    global server_process, log_file
-    if server_process:
-        print("Shutting down local llama-server...")
-        server_process.terminate()
-        server_process.wait()
-    if log_file:
-        log_file.close()
-    await close_connection()
 
 
 # ── Helper: stream async LLM call ────────────────────────────────────────────
