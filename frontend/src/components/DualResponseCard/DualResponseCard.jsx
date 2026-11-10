@@ -1,19 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useChatStore } from "../../store/chatStore";
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-
-/* ─── Timer hook ─────────────────────────────────────────────── */
-function useCountdown(seconds, onExpire) {
-  const [remaining, setRemaining] = useState(seconds);
-  useEffect(() => {
-    if (remaining <= 0) { onExpire(); return; }
-    const t = setTimeout(() => setRemaining((r) => r - 1), 1000);
-    return () => clearTimeout(t);
-  }, [remaining, onExpire]);
-  return remaining;
-}
 
 /* ─── Single response card ───────────────────────────────────── */
 function ResponseCard({ label, response, onChoose, isChosen, disabled }) {

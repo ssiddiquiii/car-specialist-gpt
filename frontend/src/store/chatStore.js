@@ -1,16 +1,6 @@
 import { create } from "zustand";
 
-let nextId = 1;
 let msgId = 1;
-
-function createConversation(title = "New Chat") {
-  return {
-    id: String(nextId++),
-    title,
-    createdAt: new Date().toISOString(),
-    messages: [],
-  };
-}
 
 function createMessage(role, content) {
   return {
@@ -309,7 +299,7 @@ export const useChatStore = create((set, get) => ({
                   };
                 });
               }
-            } catch (e) {
+            } catch {
               console.warn("Failed to parse SSE chunk:", dataStr);
             }
           }
@@ -389,7 +379,7 @@ export const useChatStore = create((set, get) => ({
     const { dualResponse } = get();
     if (!dualResponse) return;
 
-    const { prompt, conversation_id, user_id, response_a, response_b, context } = dualResponse;
+    const { prompt, conversation_id, response_a, response_b, context } = dualResponse;
 
     // Optimistically add chosen message and clear dual state
     const chosenContent =

@@ -1,3 +1,10 @@
+const CarIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M5 17H3a2 2 0 0 1-2-2v-3l3-3L6 7h12l2 3 3 3v2a2 2 0 0 1-2 2h-2"/>
+    <circle cx="7.5" cy="17.5" r="2.5"/><circle cx="16.5" cy="17.5" r="2.5"/>
+  </svg>
+);
+
 /* Three bouncing dots — animated via CSS keyframes (typingBounce) */
 function TypingIndicator() {
   const dotStyle = (delay) => ({
@@ -8,13 +15,6 @@ function TypingIndicator() {
     animation: `typingBounce 1.2s ease-in-out ${delay} infinite`,
     display: "inline-block",
   });
-
-  const CarIcon = () => (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M5 17H3a2 2 0 0 1-2-2v-3l3-3L6 7h12l2 3 3 3v2a2 2 0 0 1-2 2h-2"/>
-      <circle cx="7.5" cy="17.5" r="2.5"/><circle cx="16.5" cy="17.5" r="2.5"/>
-    </svg>
-  );
 
   return (
     <div style={{
