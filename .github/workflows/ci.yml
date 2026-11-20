@@ -31,7 +31,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r backend/requirements.txt pytest pytest-asyncio
 
-      - name: Execute Pytest Suite (24 tests)
+      - name: Execute Pytest Suite (27 tests)
         working-directory: backend
         run: pytest -v
 

@@ -15,9 +15,9 @@ Drivers and mechanics often need troubleshooting help in places without reliable
 | **Best Used For** | 100% offline diagnostics on the road or in dead zones | Local desktop workspace with conversation history & logging |
 | **Engine** | Native C++ `llama.cpp` via `llama.rn` (`libllama.so` in phone RAM) | Local `llama-server.exe` managed automatically by FastAPI |
 | **Internet Needed?** | **None.** Works fully in Airplane Mode | **None for AI.** Inference runs 100% locally on your machine |
-| **Model Setup** | Downloads once over Wi-Fi (~1.68 GB) into app storage | Place `.gguf` file into the `backend/` folder |
+| **Model Setup** | Downloads Gemma 2B Q4_K_M (`~1.68 GB`) once over Wi-Fi into app storage | Place fine-tuned `gemma-4-e2b-it.Q4_K_M.gguf` (`~3.43 GB`) into `backend/` |
 | **Generation Speed** | ~9–11 tokens/sec on device CPU | Fast multi-threaded local CPU / GPU generation |
-| **User Feedback (RLHF)** | Saves ratings locally; syncs to MongoDB Atlas when back online | Streams two answers ($T=0.3$ vs $T=0.6$) and logs user choice |
+| **User Feedback (RLHF)** | Runs sequential dual answers ($T=0.3$ vs $T=0.6$) stored locally via `AsyncStorage` | Streams two answers in parallel over SSE ($T=0.7$ vs $T=0.95$) and logs choices to MongoDB Atlas |
 
 ---
 
@@ -25,12 +25,13 @@ Drivers and mechanics often need troubleshooting help in places without reliable
 
 | Component | Technologies |
 | :--- | :--- |
-| **Model & Training** | Google Gemma 4 (2B) (`gemma-4-e2b-it`), Unsloth, QLoRA (4-bit), Kaggle & Colab GPUs |
-| **Evaluation** | **DeepEval** (Answer Relevancy & Correctness on 54 golden test pairs) |
+| **Model & Training** | Google Gemma 4 (2B) (`gemma-4-e2b-it`), Unsloth, QLoRA (4-bit), NEFTune, Kaggle & Colab GPUs |
+| **Evaluation** | **DeepEval** (Answer Relevancy & Correctness on 54 golden test pairs across 10 runs) |
 | **Inference Engines** | `llama.cpp`, GGUF (Q4_K_M quantization), `llama.rn` (Android C++ JNI), `llama-server` |
-| **Backend API** | FastAPI (Python 3.10+), Uvicorn, Server-Sent Events (SSE) for real-time streaming |
-| **Frontend & Mobile** | React 18, Vite, React Native (Expo bare workflow), Zustand, AsyncStorage |
-| **Database** | MongoDB Atlas (`preference_logs`, `conversations`), Motor async driver |
+| **Backend API** | FastAPI (Python 3.10+, lifespan lifecycle), Uvicorn, Server-Sent Events (SSE) for real-time streaming |
+| **Frontend & Mobile** | React 19, Vite 8, React Native (Expo bare workflow), Zustand, AsyncStorage |
+| **Database** | MongoDB Atlas (`preference_logs`, `users`, `conversations`), Motor async driver |
+| **Testing & CI/CD** | Pytest (27 backend unit tests), ESLint, Vite build, GitHub Actions CI |
 
 ---
 
@@ -60,12 +61,11 @@ VERDICT: MARGINAL / FLAT (Optimal Sweet Spot)
 
 ### Quantization & Memory Footprint
 
-| Metric | Base Model (FP16) | Quantized (Q4_K_M GGUF) | Real-World Impact |
+| Metric | Fine-Tuned Gemma 4 E2B (Q4_K_M GGUF) | Mobile Runtime Package (Gemma 2 2B Q4_K_M) | Real-World Impact |
 | :--- | :--- | :--- | :--- |
-| **Disk Size** | ~4.8 GB | **~1.68 GB** | 65% smaller download size for mobile users |
-| **RAM Used** | ~4.8 GB | **~1.6 GB** | Runs comfortably on regular Android phones |
-| **Speed** | Cloud API dependent | **~9–11 tokens/sec** | Real-time typing speed directly on mobile CPU |
-| **Internet Needed** | Continuous connection | **Zero (100% Offline)** | Works in full Airplane Mode |
+| **Disk Size** | **~3.43 GB** (`3.19 GiB` on Hugging Face) | **~1.68 GB** (offline Android setup) | Fits local desktop servers cleanly while mobile targets 2–3 GB RAM budgets |
+| **Speed** | Multi-threaded CPU / CUDA `llama-server` | **~9–11 tokens/sec** on phone CPU | Real-time streaming with zero cloud API bills |
+| **Internet Needed** | Zero for AI inference | **Zero (100% Offline)** after setup | Works in full Airplane Mode and remote garages |
 
 ---
 
@@ -76,7 +76,7 @@ flowchart TD
     subgraph Model_Pipeline["1. Training & Quantization"]
         RAW["Automotive Q&A Data<br/>(342-500 Pairs)"] --> KAGGLE["Kaggle & Colab GPUs<br/>(Unsloth + QLoRA 4-bit)"]
         KAGGLE --> EVAL["DeepEval Validation<br/>(Relevancy: 98%, Correctness: 50%)"]
-        EVAL --> GGUF["llama.cpp Quantization<br/>(Q4_K_M GGUF ~1.68 GB)"]
+        EVAL --> GGUF["llama.cpp Quantization<br/>(Q4_K_M GGUF ~3.43 GB)"]
         GGUF --> HF["Hugging Face Hub<br/>(ssiddiquii/car-repair-gemma-gguf)"]
     end
 
@@ -122,7 +122,7 @@ cd car-specialist-gpt
 
 ### 2. Download Model & Place in `backend/`
 The quantized model file is hosted on Hugging Face:
-1. Download **`gemma-4-e2b-it.Q4_K_M.gguf`** (~1.68 GB) from:  
+1. Download **`gemma-4-e2b-it.Q4_K_M.gguf`** (~3.43 GB) from:  
    👉 **[ssiddiquii/car-repair-gemma-gguf](https://huggingface.co/ssiddiquii/car-repair-gemma-gguf)**
 2. Save it directly inside the `backend/` folder:
    ```text
@@ -178,18 +178,16 @@ Open **[http://localhost:5173](http://localhost:5173)** in your browser.
 
 ## 📱 Mobile Setup (Android)
 
-### Option 1: Install Pre-Built APK (Fastest)
-If you just want to test the app without setting up Android Studio or NDK:
-1. Download the **[Pre-Compiled APK](https://expo.dev/artifacts/eas/nWLQxaqpVZAjTieNEhACBiZvBNBSwWZ_tjrMthynwG0.apk)** directly on your Android phone.
-2. Install and launch it.
-
-### Option 2: Build from Source
-> **Note:** Standard Expo Go cannot run this app because `llama.rn` requires custom compiled C++ binaries (`libllama.so`). You must run a native build:
+> **Note:** Standard Expo Go cannot run this app because `llama.rn` requires custom compiled C++ binaries (`libllama.so`). Build an Android dev/preview APK with EAS or run a local native build:
 
 ```bash
+# Option 1: Local native Android build (requires Android Studio / NDK)
 cd mobile
 npm install
 npx expo run:android
+
+# Option 2: Cloud APK build via Expo EAS
+npx eas build -p android --profile preview
 ```
 
 ### How to Test 100% Offline Mode
@@ -197,7 +195,7 @@ npx expo run:android
 2. **Turn on Airplane Mode:** Turn off Wi-Fi and mobile data.
 3. **Ask a car problem:** Type a question like *"My 2018 Civic has a high squeal when braking at low speed"*.
 4. **Offline generation:** The text streams in real-time (~9–11 tokens/sec), running purely on your phone CPU.
-5. **Sync feedback:** Pick your preferred response. When you reconnect to Wi-Fi later, your preference logs sync to MongoDB Atlas automatically.
+5. **Pick response:** Choose Option A or Option B to save the final answer into local `AsyncStorage` conversation history.
 
 ---
 
